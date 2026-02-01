@@ -1,0 +1,42 @@
+{
+    "name": "{{project_name}}",
+    "image": "mcr.microsoft.com/devcontainers/python:3.12",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+        "ghcr.io/devcontainers-contrib/features/terraform-asdf:2": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "charliermarsh.ruff",
+                "redhat.vscode-yaml",
+                "hashicorp.terraform",
+                "ms-azuretools.vscode-docker"
+            ],
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python",
+                "python.formatting.provider": "none",
+                "editor.formatOnSave": true,
+                "[python]": {
+                    "editor.defaultFormatter": "charliermarsh.ruff",
+                    "editor.codeActionsOnSave": {
+                        "source.organizeImports": "explicit",
+                        "source.fixAll": "explicit"
+                    }
+                },
+                "ruff.organizeImports": true
+            }
+        }
+    },
+    "postCreateCommand": "pip install -e '.[dev]'",
+    "forwardPorts": [8000],
+    "portsAttributes": {
+        "8000": {
+            "label": "FastAPI",
+            "onAutoForward": "notify"
+        }
+    },
+    "remoteUser": "vscode"
+}

@@ -1,0 +1,26 @@
+{
+    "name": "{{project_name}}",
+    "image": "mcr.microsoft.com/devcontainers/typescript-node:20",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+        "ghcr.io/devcontainers-contrib/features/terraform-asdf:2": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "angular.ng-template",
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "redhat.vscode-yaml",
+                "hashicorp.terraform"
+            ],
+            "settings": {
+                "editor.formatOnSave": true
+            }
+        }
+    },
+    "postCreateCommand": "npm install",
+    "forwardPorts": [4200],
+    "workspaceFolder": "/workspace",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind"
+}

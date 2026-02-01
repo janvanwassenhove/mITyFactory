@@ -1,0 +1,23 @@
+# Build output
+target/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+!.vscode/settings.json
+!.vscode/launch.json
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local

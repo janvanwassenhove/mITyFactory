@@ -1,0 +1,29 @@
+[package]
+name = "mity_agents"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Deterministic SDLC role handlers for mITyFactory"
+
+[dependencies]
+mity_spec.workspace = true
+mity_core.workspace = true
+mity_runner.workspace = true
+mity_templates.workspace = true
+mity_policy.workspace = true
+mity_iac.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+async-trait.workspace = true
+tokio.workspace = true
+uuid.workspace = true
+chrono.workspace = true
+regex.workspace = true
+
+[dev-dependencies]
+tempfile.workspace = true
+mockall.workspace = true

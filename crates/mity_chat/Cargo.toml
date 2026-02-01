@@ -1,0 +1,51 @@
+[package]
+name = "mity_chat"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Agent chat system for mITyFactory - intake and continuous intervention"
+
+[dependencies]
+# Async
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_yaml = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Date/Time
+chrono = { workspace = true }
+
+# UUID
+uuid = { workspace = true }
+
+# File system
+walkdir = { workspace = true }
+tempfile = { workspace = true }
+
+# Regex for error parsing
+regex = { workspace = true }
+
+# HTTP client for LLM APIs
+reqwest = { version = "0.11", features = ["json", "stream"] }
+futures = "0.3"
+
+# Internal crates
+mity_spec = { workspace = true }
+mity_agents = { workspace = true }
+mity_templates = { workspace = true }
+mity_iac = { workspace = true }
+
+[dev-dependencies]
+mockall = { workspace = true }
+tokio-test = "0.4"

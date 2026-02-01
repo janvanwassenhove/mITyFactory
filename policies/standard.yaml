@@ -1,0 +1,62 @@
+# Standard Quality Policy
+# Base policy that applies to all templates
+
+id: standard-quality
+name: Standard Quality Policy
+description: |
+  Base quality gate policy for all applications.
+  Includes essential security and documentation checks.
+version: "1.0.0"
+
+# Applies to all templates
+applies_to:
+  - "*"
+
+severity: error
+allow_skip: false
+
+checks:
+  # Linting (generic)
+  - id: lint
+    name: Lint Check
+    description: Run language-specific linting
+    check_type: lint
+    required: true
+    severity: error
+
+  # Tests (generic)
+  - id: test
+    name: Unit Tests
+    description: Run unit tests
+    check_type: test
+    required: true
+    severity: error
+
+  # Build (generic)
+  - id: build
+    name: Build Check
+    description: Verify the project builds
+    check_type: build
+    required: true
+    severity: error
+
+  # Secrets scan
+  - id: secrets
+    name: Secrets Scan
+    description: Scan for hardcoded secrets
+    check_type: secrets_scan
+    required: true
+    severity: critical
+
+  # Documentation
+  - id: docs
+    name: Documentation
+    description: Verify documentation exists
+    check_type: docs_exist
+    required: true
+    severity: warning
+
+rules:
+  - rule_id: no-secrets
+  - rule_id: no-aws-keys
+  - rule_id: require-readme

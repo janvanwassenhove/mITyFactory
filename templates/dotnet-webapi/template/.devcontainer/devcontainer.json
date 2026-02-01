@@ -1,0 +1,25 @@
+{
+    "name": "{{project_name}}",
+    "image": "mcr.microsoft.com/devcontainers/dotnet:8.0",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+        "ghcr.io/devcontainers-contrib/features/terraform-asdf:2": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-dotnettools.csharp",
+                "ms-dotnettools.csdevkit",
+                "redhat.vscode-yaml",
+                "hashicorp.terraform"
+            ],
+            "settings": {
+                "dotnet.defaultSolution": "{{project_name}}.sln"
+            }
+        }
+    },
+    "postCreateCommand": "dotnet restore",
+    "forwardPorts": [5000, 5001, 8080],
+    "workspaceFolder": "/workspace",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind"
+}

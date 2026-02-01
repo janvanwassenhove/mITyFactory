@@ -1,0 +1,153 @@
+# Python FastAPI Quality Policy
+# Defines required checks for Python FastAPI applications
+
+id: python-fastapi-quality
+name: Python FastAPI Quality Policy
+description: |
+  Quality gate policy for Python FastAPI applications.
+  Enforces linting, testing, build verification, and security scanning.
+version: "1.0.0"
+
+# This policy applies to python-fastapi templates
+applies_to:
+  - python-fastapi
+  - python-flask
+
+# Severity for the entire policy
+severity: error
+
+# Whether this policy can be skipped with justification
+allow_skip: false
+
+# Required quality checks
+checks:
+  # Linting with ruff
+  - id: lint-ruff
+    name: Ruff Linting
+    description: Run ruff linter to check code style and common issues
+    check_type: lint
+    required: true
+    severity: error
+    config:
+      command: ruff
+      args:
+        - check
+        - .
+      container: python:3.12-slim
+      timeout_seconds: 300
+
+  # Type checking with mypy (optional)
+  - id: type-check
+    name: Type Checking (mypy)
+    description: Run mypy for static type checking
+    check_type: custom_command
+    required: false
+    severity: warning
+    config:
+      command: mypy
+      args:
+        - src
+        - --ignore-missing-imports
+      container: python:3.12-slim
+      timeout_seconds: 300
+      allow_failure: true
+
+  # Unit tests with pytest
+  - id: test-pytest
+    name: Unit Tests (pytest)
+    description: Run pytest unit tests
+    check_type: test
+    required: true
+    severity: error
+    config:
+      command: pytest
+      args:
+        - -v
+        - --tb=short
+      container: python:3.12-slim
+      timeout_seconds: 600
+
+  # Code coverage
+  - id: coverage
+    name: Code Coverage
+    description: Ensure code coverage meets minimum threshold
+    check_type: coverage
+    required: false
+    severity: warning
+    config:
+      threshold: 70.0
+      command: pytest
+      args:
+        - --cov=src
+        - --cov-report=term
+        - --cov-fail-under=70
+
+  # Build verification
+  - id: build-pip
+    name: Build Verification
+    description: Verify the package builds successfully
+    check_type: build
+    required: true
+    severity: error
+    config:
+      command: pip
+      args:
+        - install
+        - -e
+        - "."
+      container: python:3.12-slim
+
+  # Secrets scanning
+  - id: secrets-scan
+    name: Secrets Scan
+    description: Scan for hardcoded secrets and credentials
+    check_type: secrets_scan
+    required: true
+    severity: critical
+    config:
+      patterns:
+        - "**/*.py"
+        - "**/*.yaml"
+        - "**/*.yml"
+        - "**/*.json"
+        - "**/*.toml"
+        - "**/*.env"
+
+  # Container build
+  - id: container-build
+    name: Container Build
+    description: Verify Docker image builds successfully
+    check_type: container_build
+    required: true
+    severity: error
+    config:
+      timeout_seconds: 600
+
+  # Documentation check
+  - id: docs-exist
+    name: Documentation Exists
+    description: Verify README.md exists
+    check_type: docs_exist
+    required: true
+    severity: warning
+
+  # Required files
+  - id: required-files
+    name: Required Files
+    description: Check for required project files
+    check_type: file_exists
+    required: true
+    severity: error
+    config:
+      patterns:
+        - README.md
+        - pyproject.toml
+        - Dockerfile
+        - src/main.py
+
+# Additional rules to include
+rules:
+  - rule_id: no-secrets
+    severity: critical
+  - rule_id: no-aws-keys
+    severity: critical

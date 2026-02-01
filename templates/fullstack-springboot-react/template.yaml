@@ -1,0 +1,116 @@
+# Spring Boot + React Fullstack Template
+# Enterprise-ready fullstack application with Spring Boot backend and React frontend
+
+id: fullstack-springboot-react
+name: Spring Boot + React
+description: Fullstack application with Spring Boot REST API backend and React 18 frontend
+version: "1.0.0"
+author: mITyFactory
+category: fullstack
+status: production
+
+# Language/Runtime Configuration
+runtime:
+  language: java
+  version: "21"
+  secondary_language: typescript
+  secondary_version: "5.3"
+  package_manager: maven
+
+# Container Configuration
+container:
+  image: eclipse-temurin
+  tag: "21-jdk"
+  build_command:
+    - ./mvnw
+    - package
+    - -DskipTests
+  test_command:
+    - ./mvnw
+    - test
+  run_command:
+    - docker-compose
+    - up
+  ports:
+    - 8080
+    - 5173
+  workdir: /app
+
+# Build/Test/Lint Commands
+commands:
+  install:
+    - ./mvnw dependency:resolve
+    - cd frontend && npm install
+  build:
+    - ./mvnw package -DskipTests
+    - cd frontend && npm run build
+  test:
+    - ./mvnw test
+    - cd frontend && npm test
+  lint:
+    - cd frontend && npm run lint
+  format:
+    - cd frontend && npm run format
+  run:
+    - docker-compose up
+
+# DevContainer Configuration
+devcontainer:
+  image: mcr.microsoft.com/devcontainers/java:21
+  features:
+    ghcr.io/devcontainers/features/node:1:
+      version: "20"
+    ghcr.io/devcontainers/features/docker-in-docker:2: {}
+  extensions:
+    - vscjava.vscode-java-pack
+    - vmware.vscode-boot-dev-pack
+    - dsznajder.es7-react-js-snippets
+    - dbaeumer.vscode-eslint
+    - esbenp.prettier-vscode
+  post_create:
+    - ./mvnw dependency:resolve
+    - cd frontend && npm install
+  ports:
+    - 8080
+    - 5173
+
+# IaC Support Configuration
+iac:
+  enabled: true
+  providers:
+    - provider: terraform
+      clouds:
+        - aws
+        - azure
+        - gcp
+      base_module: iac/terraform/base
+  outputs:
+    - name: backend_url
+      description: Backend API URL
+      type: string
+    - name: frontend_url
+      description: Frontend URL
+      type: string
+    - name: health_check_path
+      description: Health check endpoint path
+      type: string
+      default: /actuator/health
+
+# Template Variables
+variables:
+  - name: project_name
+    description: Name of the project
+    required: true
+  - name: group_id
+    description: Maven group ID
+    default: com.example
+  - name: description
+    description: Project description
+    default: Fullstack application with Spring Boot and React
+
+# Files to render with variable substitution
+files_to_render:
+  - backend/pom.xml
+  - frontend/package.json
+  - README.md
+  - docker-compose.yml

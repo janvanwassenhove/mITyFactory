@@ -1,0 +1,97 @@
+{
+  "sessionId": "1b40ffec-3d26-4b4b-af4d-3a181f2816ab",
+  "currency": "USD",
+  "sessionCost": {
+    "currency": "USD",
+    "scope": "session",
+    "confidence": 0.5,
+    "breakdown": {
+      "llm": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      },
+      "compute": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      },
+      "storage": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      },
+      "network": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      },
+      "misc": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      }
+    },
+    "total": {
+      "min": 0.0,
+      "expected": 0.0,
+      "max": 0.0
+    },
+    "assumptions": [
+      "Using conservative LLM pricing estimates",
+      "Local execution costs are indicative only"
+    ],
+    "updatedAt": "2026-01-18T18:07:59.500678200Z",
+    "isMonthly": false
+  },
+  "infraCost": {
+    "currency": "USD",
+    "scope": "app",
+    "confidence": 0.3,
+    "breakdown": {
+      "llm": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      },
+      "compute": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      },
+      "storage": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      },
+      "network": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      },
+      "misc": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      }
+    },
+    "total": {
+      "min": 0.0,
+      "expected": 0.0,
+      "max": 0.0
+    },
+    "assumptions": [
+      "Single-region deployment",
+      "Low traffic assumed",
+      "No high availability",
+      "Minimum resource allocation"
+    ],
+    "updatedAt": "2026-01-18T18:07:59.500680100Z",
+    "isMonthly": true
+  },
+  "llmUsage": [],
+  "executionCosts": [],
+  "featureCosts": {},
+  "confirmationThreshold": 5.0,
+  "updatedAt": "2026-01-18T18:07:59.500680700Z"
+}

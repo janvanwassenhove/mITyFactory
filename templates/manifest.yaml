@@ -1,0 +1,214 @@
+# mITyFactory Templates Manifest
+# This file defines all available templates and their metadata
+# Each template has its own template.yaml with full configuration
+
+version: "1.0"
+schema_version: "2.0"
+
+# Template Discovery Configuration
+discovery:
+  # Directories to scan for templates
+  paths:
+    - templates/
+  # File patterns for template manifests  
+  patterns:
+    - template.yaml
+    - template.yml
+
+# Available Templates
+templates:
+  - id: python-fastapi
+    name: Python FastAPI
+    description: A modern, fast Python web API using FastAPI and uvicorn
+    category: backend
+    status: production
+    runtime:
+      language: python
+      version: "3.12"
+    iac:
+      enabled: true
+      providers: [terraform]
+      clouds: [aws, azure, gcp]
+    tags: [python, fastapi, rest, api, containerized]
+    
+  - id: java-springboot
+    name: Java Spring Boot
+    description: Enterprise-ready Java application with Spring Boot
+    category: backend
+    status: production
+    runtime:
+      language: java
+      version: "21"
+    iac:
+      enabled: true
+      providers: [terraform]
+      clouds: [aws, azure, gcp]
+    tags: [java, spring, enterprise, containerized]
+    
+  - id: java-quarkus
+    name: Java Quarkus
+    description: Supersonic, subatomic Java with Quarkus - cloud-native and container-first
+    category: backend
+    status: production
+    runtime:
+      language: java
+      version: "21"
+    iac:
+      enabled: true
+      providers: [terraform]
+      clouds: [aws, azure, gcp]
+    tags: [java, quarkus, native, cloud-native]
+    
+  - id: dotnet-webapi
+    name: .NET Web API
+    description: ASP.NET Core 8 Web API with minimal APIs and clean architecture
+    category: backend
+    status: production
+    runtime:
+      language: csharp
+      version: "12"
+    iac:
+      enabled: true
+      providers: [terraform]
+      clouds: [aws, azure, gcp]
+    tags: [dotnet, csharp, aspnet, containerized]
+    
+  - id: rust-api
+    name: Rust API
+    description: High-performance Rust API with Axum
+    category: backend
+    status: stub
+    runtime:
+      language: rust
+      version: "1.75"
+    iac:
+      enabled: false
+    tags: [rust, axum, performance]
+    
+  - id: frontend-react
+    name: React SPA
+    description: React single-page application with TypeScript
+    category: frontend
+    status: stub
+    runtime:
+      language: typescript
+      version: "5.3"
+    iac:
+      enabled: false
+    tags: [react, typescript, spa]
+    
+  - id: frontend-angular
+    name: Angular SPA
+    description: Angular 17+ single-page application with TypeScript and standalone components
+    category: frontend
+    status: production
+    runtime:
+      language: typescript
+      version: "5.3"
+    iac:
+      enabled: true
+      providers: [terraform]
+      clouds: [aws, azure, gcp]
+    tags: [angular, typescript, spa, containerized]
+    
+  - id: frontend-vue
+    name: Vue.js SPA
+    description: Vue.js 3 single-page application with TypeScript, Vite, and Pinia
+    category: frontend
+    status: production
+    runtime:
+      language: typescript
+      version: "5.3"
+    iac:
+      enabled: true
+      providers: [terraform]
+      clouds: [aws, azure, gcp]
+    tags: [vue, typescript, spa, vite, containerized]
+    
+  - id: electron-app
+    name: Electron Desktop
+    description: Cross-platform desktop application with Electron
+    category: desktop
+    status: stub
+    runtime:
+      language: typescript
+      version: "5.0"
+    iac:
+      enabled: false
+    tags: [electron, desktop, cross-platform]
+    
+  # Fullstack Templates
+  - id: fullstack-springboot-vue
+    name: Spring Boot + Vue.js
+    description: Fullstack application with Spring Boot REST API backend and Vue.js 3 frontend
+    category: fullstack
+    status: production
+    runtime:
+      language: java
+      version: "21"
+      secondary_language: typescript
+      secondary_version: "5.3"
+    iac:
+      enabled: true
+      providers: [terraform]
+      clouds: [aws, azure, gcp]
+    tags: [java, spring, vue, typescript, fullstack, containerized]
+    
+  - id: fullstack-springboot-react
+    name: Spring Boot + React
+    description: Fullstack application with Spring Boot REST API backend and React 18 frontend
+    category: fullstack
+    status: production
+    runtime:
+      language: java
+      version: "21"
+      secondary_language: typescript
+      secondary_version: "5.3"
+    iac:
+      enabled: true
+      providers: [terraform]
+      clouds: [aws, azure, gcp]
+    tags: [java, spring, react, typescript, fullstack, containerized]
+    
+  - id: fullstack-quarkus-vue
+    name: Quarkus + Vue.js
+    description: Cloud-native fullstack application with Quarkus REST API backend and Vue.js 3 frontend
+    category: fullstack
+    status: production
+    runtime:
+      language: java
+      version: "21"
+      secondary_language: typescript
+      secondary_version: "5.3"
+    iac:
+      enabled: true
+      providers: [terraform]
+      clouds: [aws, azure, gcp]
+    tags: [java, quarkus, vue, typescript, fullstack, cloud-native]
+    
+  - id: fullstack-quarkus-react
+    name: Quarkus + React
+    description: Cloud-native fullstack application with Quarkus REST API backend and React 18 frontend
+    category: fullstack
+    status: production
+    runtime:
+      language: java
+      version: "21"
+      secondary_language: typescript
+      secondary_version: "5.3"
+    iac:
+      enabled: true
+      providers: [terraform]
+      clouds: [aws, azure, gcp]
+    tags: [java, quarkus, react, typescript, fullstack, cloud-native]
+
+# IaC Provider Configurations
+iac_providers:
+  terraform:
+    version: "1.6"
+    image: hashicorp/terraform
+    clouds:
+      - aws
+      - azure
+      - gcp
+    base_modules: iac/terraform/base

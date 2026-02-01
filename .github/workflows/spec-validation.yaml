@@ -1,0 +1,141 @@
+name: Spec Validation
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'crates/**'
+      - 'templates/**'
+      - '.specify/**'
+
+jobs:
+  # ============================================================================
+  # Validate Spec Kit Compliance
+  # ============================================================================
+  spec-validation:
+    name: Spec Kit Validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for diff
+
+      - name: Check spec files exist
+        run: |
+          echo "Validating spec kit structure..."
+          required_files=(
+            ".specify/constitution.md"
+            ".specify/principles.md"
+            ".specify/testing-requirements.md"
+            ".specify/glossary.md"
+            ".specify/roadmap.md"
+          )
+          
+          for file in "${required_files[@]}"; do
+            if [[ ! -f "$file" ]]; then
+              echo "❌ Missing required spec file: $file"
+              exit 1
+            fi
+            echo "✅ Found: $file"
+          done
+
+      - name: Check for feature specs on new features
+        run: |
+          echo "Checking if new features have specs..."
+          
+          # Get changed files
+          changed_files=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          
+          # Check if code changes exist without corresponding feature spec
+          has_code_changes=false
+          has_spec_changes=false
+          
+          for file in $changed_files; do
+            if [[ "$file" == crates/* ]] && [[ "$file" == *.rs ]]; then
+              has_code_changes=true
+            fi
+            if [[ "$file" == .specify/features/* ]]; then
+              has_spec_changes=true
+            fi
+          done
+          
+          # Warn if code changes without spec (not blocking, just advisory)
+          if [[ "$has_code_changes" == true ]] && [[ "$has_spec_changes" == false ]]; then
+            echo "⚠️ Code changes detected without feature spec updates."
+            echo "Consider adding or updating a feature spec in .specify/features/"
+          fi
+
+      - name: Validate YAML feature specs
+        run: |
+          echo "Validating feature spec YAML files..."
+          
+          for file in .specify/features/*.yaml .specify/features/*.yml; do
+            if [[ -f "$file" ]]; then
+              echo "Checking: $file"
+              # Basic YAML validation using Python
+              python3 -c "import yaml; yaml.safe_load(open('$file'))" || {
+                echo "❌ Invalid YAML in $file"
+                exit 1
+              }
+              echo "✅ Valid: $file"
+            fi
+          done
+
+  # ============================================================================
+  # Check Constitution Compliance
+  # ============================================================================
+  constitution-check:
+    name: Constitution Compliance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for constitution violations
+        run: |
+          echo "Checking for potential constitution violations..."
+          
+          # Article III: Container-First - Check for direct host tool calls
+          # (This is a heuristic check, not exhaustive)
+          if grep -r "std::process::Command" crates/ --include="*.rs" | grep -v "docker\|podman\|container" | grep -v "test" | grep -v "#\[cfg(test)\]"; then
+            echo "⚠️ Found potential host command execution. Verify it's container-isolated per Article III."
+          fi
+          
+          # Article V: Deterministic - Check for random without seed
+          if grep -r "rand::" crates/ --include="*.rs" | grep -v "seed\|deterministic" | head -5; then
+            echo "⚠️ Found random usage. Verify determinism per Article V."
+          fi
+          
+          echo "✅ Constitution compliance check complete"
+
+  # ============================================================================
+  # Template Spec Kit Validation
+  # ============================================================================
+  template-specs:
+    name: Template Spec Kit Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate template spec kits
+        run: |
+          echo "Checking templates have spec kits..."
+          
+          for template_dir in templates/*/template; do
+            if [[ -d "$template_dir" ]]; then
+              template_name=$(basename $(dirname $template_dir))
+              
+              # Check for .github/copilot-instructions.md
+              if [[ ! -f "$template_dir/.github/copilot-instructions.md" ]]; then
+                echo "⚠️ Template '$template_name' missing .github/copilot-instructions.md"
+              else
+                echo "✅ $template_name: copilot-instructions.md"
+              fi
+              
+              # Check for .specify/constitution.md
+              if [[ ! -f "$template_dir/.specify/constitution.md" ]]; then
+                echo "⚠️ Template '$template_name' missing .specify/constitution.md"
+              else
+                echo "✅ $template_name: constitution.md"
+              fi
+            fi
+          done

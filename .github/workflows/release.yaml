@@ -1,0 +1,182 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: write
+
+jobs:
+  # ============================================================================
+  # Create Release
+  # ============================================================================
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Get version from tag
+        id: get_version
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: mITyFactory ${{ github.ref_name }}
+          draft: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================================================
+  # Build Release Artifacts
+  # ============================================================================
+  build-release:
+    name: Build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    needs: create-release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Linux x86_64
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            artifact: mity
+            archive: tar.gz
+          # Linux x86_64 musl (static)
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            artifact: mity
+            archive: tar.gz
+          # Linux ARM64
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            artifact: mity
+            archive: tar.gz
+          # Windows x86_64
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact: mity.exe
+            archive: zip
+          # Windows ARM64
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
+            artifact: mity.exe
+            archive: zip
+          # macOS x86_64 (Intel)
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            artifact: mity
+            archive: tar.gz
+          # macOS ARM64 (Apple Silicon)
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            artifact: mity
+            archive: tar.gz
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-action@stable
+        with:
+          targets: ${{ matrix.target }}
+      
+      - name: Install cross-compilation tools (Linux ARM)
+        if: matrix.target == 'aarch64-unknown-linux-gnu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+      
+      - name: Install musl tools
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get install -y musl-tools
+      
+      - name: Build release binary
+        run: cargo build --release --target ${{ matrix.target }} -p mity_cli
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+      
+      - name: Create archive (Unix)
+        if: matrix.archive == 'tar.gz'
+        run: |
+          mkdir -p dist
+          cp target/${{ matrix.target }}/release/${{ matrix.artifact }} dist/
+          cp README.md LICENSE dist/ 2>/dev/null || true
+          cd dist
+          tar -czvf ../mity-${{ needs.create-release.outputs.version }}-${{ matrix.target }}.tar.gz *
+      
+      - name: Create archive (Windows)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist
+          Copy-Item "target/${{ matrix.target }}/release/${{ matrix.artifact }}" -Destination dist/
+          Copy-Item README.md, LICENSE -Destination dist/ -ErrorAction SilentlyContinue
+          Compress-Archive -Path dist/* -DestinationPath "mity-${{ needs.create-release.outputs.version }}-${{ matrix.target }}.zip"
+      
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: mity-${{ needs.create-release.outputs.version }}-${{ matrix.target }}.${{ matrix.archive }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Generate SHA256 checksum (Unix)
+        if: matrix.archive == 'tar.gz'
+        run: |
+          sha256sum mity-${{ needs.create-release.outputs.version }}-${{ matrix.target }}.tar.gz > mity-${{ needs.create-release.outputs.version }}-${{ matrix.target }}.tar.gz.sha256
+      
+      - name: Generate SHA256 checksum (Windows)
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash "mity-${{ needs.create-release.outputs.version }}-${{ matrix.target }}.zip" -Algorithm SHA256).Hash.ToLower()
+          $filename = "mity-${{ needs.create-release.outputs.version }}-${{ matrix.target }}.zip"
+          "$hash  $filename" | Out-File -FilePath "mity-${{ needs.create-release.outputs.version }}-${{ matrix.target }}.zip.sha256" -Encoding ASCII
+      
+      - name: Upload Checksum
+        uses: softprops/action-gh-release@v1
+        with:
+          files: mity-${{ needs.create-release.outputs.version }}-${{ matrix.target }}.${{ matrix.archive }}.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================================================
+  # Publish to crates.io (optional)
+  # ============================================================================
+  publish-crates:
+    name: Publish to crates.io
+    runs-on: ubuntu-latest
+    needs: [create-release, build-release]
+    if: ${{ !contains(github.ref_name, '-') }}  # Only for stable releases
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-action@stable
+      
+      - name: Publish crates
+        run: |
+          echo "Crates.io publishing is configured but disabled by default."
+          echo "To enable, uncomment the cargo publish commands below."
+          # cargo publish -p mity_spec --token ${{ secrets.CRATES_TOKEN }}
+          # cargo publish -p mity_core --token ${{ secrets.CRATES_TOKEN }}
+          # cargo publish -p mity_runner --token ${{ secrets.CRATES_TOKEN }}
+          # cargo publish -p mity_templates --token ${{ secrets.CRATES_TOKEN }}
+          # cargo publish -p mity_policy --token ${{ secrets.CRATES_TOKEN }}
+          # cargo publish -p mity_iac --token ${{ secrets.CRATES_TOKEN }}
+          # cargo publish -p mity_agents --token ${{ secrets.CRATES_TOKEN }}
+          # cargo publish -p mity_cli --token ${{ secrets.CRATES_TOKEN }}

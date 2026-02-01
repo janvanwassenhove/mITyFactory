@@ -1,0 +1,55 @@
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
+.env.local
+*.env
+
+# Generated workspaces
+/workspaces/
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# Test coverage
+coverage/
+*.lcov
+
+# Build artifacts
+dist/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Terraform state (should not be in repo)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Secrets (never commit)
+*.pem
+*.key
+secrets/

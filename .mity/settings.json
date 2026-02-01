@@ -1,0 +1,48 @@
+{
+  "agentModels": {
+    "analyst": {
+      "model": "gpt-5-mini",
+      "provider": "openai",
+      "useDefault": true
+    },
+    "architect": {
+      "model": "gpt-5-mini",
+      "provider": "openai",
+      "useDefault": true
+    },
+    "designer": {
+      "model": "gpt-5-mini",
+      "provider": "openai",
+      "useDefault": true
+    },
+    "devops": {
+      "model": "gpt-5-mini",
+      "provider": "openai",
+      "useDefault": true
+    },
+    "implementer": {
+      "model": "gpt-5-mini",
+      "provider": "openai",
+      "useDefault": true
+    },
+    "reviewer": {
+      "model": "gpt-5-mini",
+      "provider": "openai",
+      "useDefault": true
+    },
+    "security": {
+      "model": "gpt-5-mini",
+      "provider": "openai",
+      "useDefault": true
+    },
+    "tester": {
+      "model": "gpt-5-mini",
+      "provider": "openai",
+      "useDefault": true
+    }
+  },
+  "currency": "EUR",
+  "defaultModel": "gpt-5-mini",
+  "defaultProvider": "openai",
+  "projectName": "mITyFactory"
+}

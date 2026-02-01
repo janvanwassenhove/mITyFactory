@@ -1,0 +1,24 @@
+# React SPA Template (Stub)
+# This template will provide React single-page application with TypeScript
+
+id: frontend-react
+name: React SPA
+description: React single-page application with TypeScript
+version: "0.1.0"
+author: mITyFactory
+status: stub
+
+container:
+  image: node
+  tag: "20-slim"
+  
+devcontainer: true
+iac_ready: true
+
+# TODO: Implement full template
+# Structure will include:
+# - src/
+# - public/
+# - package.json
+# - tsconfig.json
+# - Dockerfile

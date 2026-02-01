@@ -1,0 +1,28 @@
+# Native Build Stage
+FROM quay.io/quarkus/ubi-quarkus-mandrel-builder-image:jdk-21 AS build
+WORKDIR /app
+
+COPY --chown=quarkus:quarkus mvnw .
+COPY --chown=quarkus:quarkus .mvn .mvn
+COPY --chown=quarkus:quarkus pom.xml .
+
+USER quarkus
+RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
+
+COPY --chown=quarkus:quarkus src src
+RUN ./mvnw package -Dnative -DskipTests
+
+# Runtime Stage - Minimal native image
+FROM quay.io/quarkus/quarkus-micro-image:2.0
+WORKDIR /app
+
+COPY --from=build /app/target/*-runner /app/application
+
+RUN chmod 775 /app
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/q/health || exit 1
+
+ENTRYPOINT ["./application", "-Dquarkus.http.host=0.0.0.0"]

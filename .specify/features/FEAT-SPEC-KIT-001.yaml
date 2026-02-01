@@ -1,0 +1,45 @@
+id: FEAT-SPEC-KIT-001
+title: Spec Kit Foundation
+description: |
+  The foundational specification system that governs mITyFactory development.
+  Includes constitution, principles, testing requirements, and feature specifications.
+  Provides the framework for specification-driven development.
+status: implemented
+priority: critical
+created: 2026-01-15
+updated: 2026-01-21
+
+acceptance_criteria:
+  - Constitution defines core tenets and governance
+  - Principles guide design decisions
+  - Testing requirements define coverage targets
+  - Feature specs follow standardized YAML schema
+  - Glossary provides terminology definitions
+  - Roadmap tracks planned features
+  - Governance document explains maintenance procedures
+
+components:
+  - path: .specify/constitution.md
+    purpose: Inviolable project rules
+  - path: .specify/principles.md
+    purpose: Design guidance
+  - path: .specify/testing-requirements.md
+    purpose: Testing standards
+  - path: .specify/glossary.md
+    purpose: Terminology definitions
+  - path: .specify/roadmap.md
+    purpose: Future plans
+  - path: .specify/GOVERNANCE.md
+    purpose: Maintenance procedures
+  - path: .specify/features/
+    purpose: Feature specifications
+
+dependencies: []
+
+related_adrs:
+  - ADR-0005-specification-driven-development.md
+
+notes: |
+  The Spec Kit is the foundation of specification-driven development in mITyFactory.
+  All new features should have corresponding feature specs before implementation.
+  The constitution can only be amended through the ADR process.

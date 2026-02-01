@@ -1,0 +1,23 @@
+# Rust API Template (Stub)
+# This template will provide high-performance Rust API with Axum
+
+id: rust-api
+name: Rust API
+description: High-performance Rust API with Axum
+version: "0.1.0"
+author: mITyFactory
+status: stub
+
+container:
+  image: rust
+  tag: "1.75-slim"
+  
+devcontainer: true
+iac_ready: true
+
+# TODO: Implement full template
+# Structure will include:
+# - src/
+# - tests/
+# - Cargo.toml
+# - Dockerfile

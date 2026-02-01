@@ -1,0 +1,26 @@
+{
+    "name": "{{project_name}}",
+    "image": "mcr.microsoft.com/devcontainers/java:21",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+        "ghcr.io/devcontainers-contrib/features/terraform-asdf:2": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "vscjava.vscode-java-pack",
+                "vmware.vscode-boot-dev-pack",
+                "redhat.vscode-yaml",
+                "hashicorp.terraform"
+            ],
+            "settings": {
+                "java.compile.nullAnalysis.mode": "automatic",
+                "java.configuration.updateBuildConfiguration": "automatic"
+            }
+        }
+    },
+    "postCreateCommand": "./mvnw dependency:resolve",
+    "forwardPorts": [8080],
+    "workspaceFolder": "/workspace",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind"
+}

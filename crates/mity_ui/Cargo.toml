@@ -1,0 +1,29 @@
+[package]
+name = "mity_ui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Tauri desktop UI for mITyFactory"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["devtools"] }
+tauri-plugin-shell = "2"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.35", features = ["process", "io-util"] }
+
+# mITyFactory crates for direct integration
+mity_templates = { path = "../mity_templates" }
+mity_spec = { path = "../mity_spec" }
+mity_iac = { path = "../mity_iac" }
+mity_chat = { path = "../mity_chat" }
+
+tracing = "0.1"
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

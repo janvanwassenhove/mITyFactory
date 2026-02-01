@@ -1,0 +1,35 @@
+# JVM Build Stage
+FROM eclipse-temurin:21-jdk AS build
+WORKDIR /app
+
+COPY mvnw .
+COPY .mvn .mvn
+COPY pom.xml .
+
+RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
+
+COPY src src
+RUN ./mvnw package -DskipTests
+
+# Runtime Stage
+FROM eclipse-temurin:21-jre
+WORKDIR /app
+
+# Create non-root user
+RUN groupadd -r quarkus && useradd -r -g quarkus quarkus
+
+# Copy application
+COPY --from=build /app/target/quarkus-app/lib/ /app/lib/
+COPY --from=build /app/target/quarkus-app/*.jar /app/
+COPY --from=build /app/target/quarkus-app/app/ /app/app/
+COPY --from=build /app/target/quarkus-app/quarkus/ /app/quarkus/
+
+RUN chown -R quarkus:quarkus /app
+USER quarkus
+
+EXPOSE 8080
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:8080/q/health || exit 1
+
+ENTRYPOINT ["java", "-jar", "quarkus-run.jar"]

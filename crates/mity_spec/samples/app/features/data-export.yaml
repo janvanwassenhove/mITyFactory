@@ -1,0 +1,16 @@
+title: Data Export
+description: Allow users to export their data in standard formats.
+status: Proposed
+priority: Medium
+acceptance_criteria:
+  - Users can export data as JSON
+  - Users can export data as CSV
+  - Export includes all user-owned data
+  - Large exports are processed asynchronously
+  - Users receive notification when export is ready
+dependencies:
+  - user-authentication
+tags:
+  - data
+  - privacy
+  - compliance

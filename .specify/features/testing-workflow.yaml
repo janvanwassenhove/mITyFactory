@@ -1,0 +1,55 @@
+# Feature: Testing Workflow for New Features
+id: FEAT-TESTING-001
+title: Testing Workflow for New Features
+description: |
+  Establishes the standard testing workflow that all new feature development must follow.
+  Ensures consistency, quality, and reliability across the mITyFactory codebase.
+status: implemented
+priority: critical
+assignee: all-contributors
+created: 2026-01-21
+updated: 2026-01-21
+
+acceptance_criteria:
+  - All new features have corresponding unit tests
+  - Integration tests exist for cross-crate functionality
+  - Documentation includes testable examples
+  - Test coverage does not decrease after changes
+  - CI pipeline validates all tests before merge
+  - Template smoke tests verify generated project quality
+
+dependencies: []
+
+testing_requirements:
+  unit_tests:
+    coverage_target: 80%
+    required_for:
+      - All public functions
+      - All public structs and methods
+      - Error handling paths
+  
+  integration_tests:
+    required_for:
+      - Workflow execution
+      - Container operations
+      - Spec parsing and validation
+      - Template rendering
+  
+  smoke_tests:
+    required_for:
+      - All templates in templates/
+      - IaC generation
+      - CLI commands
+
+definition_of_done:
+  - Code compiles without warnings
+  - All tests pass
+  - Code coverage meets targets
+  - Clippy lints pass
+  - Documentation complete
+  - ADR written (if architectural change)
+
+notes: |
+  This feature establishes the baseline testing requirements referenced in 
+  .specify/testing-requirements.md. All contributors must follow these 
+  guidelines when developing new features.

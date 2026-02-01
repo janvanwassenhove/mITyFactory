@@ -1,0 +1,94 @@
+# Vue.js SPA Template
+# Vue.js 3 single-page application with TypeScript and Vite
+
+id: frontend-vue
+name: Vue.js SPA
+description: Vue.js 3 single-page application with TypeScript, Vite, and Pinia
+version: "1.0.0"
+author: mITyFactory
+category: frontend
+status: production
+
+# Language/Runtime Configuration
+runtime:
+  language: typescript
+  version: "5.3"
+  package_manager: npm
+
+# Container Configuration
+container:
+  image: node
+  tag: "20-slim"
+  build_command:
+    - npm
+    - run
+    - build
+  test_command:
+    - npm
+    - test
+  run_command:
+    - npm
+    - run
+    - preview
+  ports:
+    - 4173
+  workdir: /app
+
+# Build/Test/Lint Commands
+commands:
+  install:
+    - npm install
+  build:
+    - npm run build
+  test:
+    - npm run test
+  lint:
+    - npm run lint
+  format:
+    - npm run format
+  run:
+    - npm run dev
+
+# DevContainer Configuration
+devcontainer:
+  image: mcr.microsoft.com/devcontainers/typescript-node:20
+  features:
+    ghcr.io/devcontainers/features/docker-in-docker:2: {}
+    ghcr.io/devcontainers-contrib/features/terraform-asdf:2: {}
+  extensions:
+    - Vue.volar
+    - dbaeumer.vscode-eslint
+    - esbenp.prettier-vscode
+    - redhat.vscode-yaml
+    - hashicorp.terraform
+  post_create:
+    - npm install
+  ports:
+    - 5173
+
+# IaC Support Configuration
+iac:
+  enabled: true
+  providers:
+    - provider: terraform
+      clouds:
+        - aws
+        - azure
+        - gcp
+      base_module: iac/terraform/base
+  outputs:
+    - name: static_site_url
+      description: URL for static site hosting
+      type: string
+
+# Template Variables
+variables:
+  - name: project_name
+    description: Name of the project
+    required: true
+
+# Files to render with variable substitution
+files_to_render:
+  - package.json
+  - README.md
+  - index.html

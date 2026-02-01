@@ -1,0 +1,108 @@
+# .NET Web API Template
+# ASP.NET Core 8 Web API with minimal APIs
+
+id: dotnet-webapi
+name: .NET Web API
+description: ASP.NET Core 8 Web API with minimal APIs and clean architecture
+version: "1.0.0"
+author: mITyFactory
+category: backend
+status: production
+
+# Language/Runtime Configuration
+runtime:
+  language: csharp
+  version: "12"
+  package_manager: nuget
+
+# Container Configuration
+container:
+  image: mcr.microsoft.com/dotnet/aspnet
+  tag: "8.0"
+  build_command:
+    - dotnet
+    - build
+    - --configuration
+    - Release
+  test_command:
+    - dotnet
+    - test
+  run_command:
+    - dotnet
+    - run
+  ports:
+    - 8080
+  workdir: /app
+
+# Build/Test/Lint Commands
+commands:
+  install:
+    - dotnet restore
+  build:
+    - dotnet build --configuration Release
+  test:
+    - dotnet test
+  lint:
+    - dotnet format --verify-no-changes
+  format:
+    - dotnet format
+  run:
+    - dotnet run
+
+# DevContainer Configuration
+devcontainer:
+  image: mcr.microsoft.com/devcontainers/dotnet:8.0
+  features:
+    ghcr.io/devcontainers/features/docker-in-docker:2: {}
+    ghcr.io/devcontainers-contrib/features/terraform-asdf:2: {}
+  extensions:
+    - ms-dotnettools.csharp
+    - ms-dotnettools.csdevkit
+    - redhat.vscode-yaml
+    - hashicorp.terraform
+  post_create:
+    - dotnet restore
+  ports:
+    - 8080
+
+# IaC Support Configuration
+iac:
+  enabled: true
+  providers:
+    - provider: terraform
+      clouds:
+        - aws
+        - azure
+        - gcp
+      base_module: iac/terraform/base
+  outputs:
+    - name: container_image
+      description: Container image name for deployment
+      type: string
+    - name: container_tag
+      description: Container image tag
+      type: string
+      default: latest
+    - name: container_port
+      description: Port the application listens on
+      type: number
+      default: "8080"
+    - name: health_check_path
+      description: Health check endpoint path
+      type: string
+      default: /health
+
+# Template Variables
+variables:
+  - name: project_name
+    description: Name of the project
+    required: true
+  - name: dotnet_version
+    description: .NET version
+    default: "8.0"
+
+# Files to render with variable substitution
+files_to_render:
+  - "*.csproj"
+  - "*.sln"
+  - README.md
