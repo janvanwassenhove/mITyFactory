@@ -69,6 +69,10 @@ fn main() {
             commands::get_architecture_doc,
             commands::list_architecture_adrs,
             commands::get_architecture_adr_content,
+            // Project specifications commands (.specify directory)
+            commands::get_specification_doc,
+            commands::list_specification_features,
+            commands::get_specification_feature_content,
             // Project file browser commands
             commands::list_project_files,
             commands::get_project_file_content,

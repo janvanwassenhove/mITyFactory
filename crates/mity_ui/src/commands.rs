@@ -1495,6 +1495,90 @@ fn extract_adr_status(content: &str) -> String {
 }
 
 // =============================================================================
+// Project Specifications Commands (.specify directory)
+// =============================================================================
+
+/// Feature specification information.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FeatureInfo {
+    pub title: String,
+    pub path: String,
+}
+
+/// Get a specific specification document.
+/// Files: constitution, principles, glossary, roadmap
+#[tauri::command]
+pub async fn get_specification_doc(app_path: String, file_name: String) -> Result<String, String> {
+    let app_path = std::path::Path::new(&app_path);
+    let spec_path = app_path.join(".specify");
+    
+    let file_path = spec_path.join(format!("{}.md", file_name));
+    
+    if file_path.exists() {
+        return std::fs::read_to_string(&file_path)
+            .map_err(|e| format!("Failed to read specification: {}", e));
+    }
+    
+    Err(format!("Specification file '{}' not found", file_name))
+}
+
+/// List all feature specifications in .specify/features directory.
+#[tauri::command]
+pub async fn list_specification_features(app_path: String) -> Result<Vec<FeatureInfo>, String> {
+    let app_path = std::path::Path::new(&app_path);
+    let features_path = app_path.join(".specify").join("features");
+    
+    if !features_path.exists() {
+        return Ok(Vec::new());
+    }
+    
+    let mut features = Vec::new();
+    
+    if let Ok(entries) = std::fs::read_dir(&features_path) {
+        for entry in entries.filter_map(|e| e.ok()) {
+            let path = entry.path();
+            if path.extension().map_or(false, |ext| ext == "md") {
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    let title = extract_feature_title(&content, &path);
+                    
+                    features.push(FeatureInfo {
+                        title,
+                        path: path.to_string_lossy().to_string(),
+                    });
+                }
+            }
+        }
+    }
+    
+    // Sort by filename
+    features.sort_by(|a, b| a.path.cmp(&b.path));
+    
+    Ok(features)
+}
+
+/// Get the content of a specific feature specification.
+#[tauri::command]
+pub async fn get_specification_feature_content(path: String) -> Result<String, String> {
+    std::fs::read_to_string(&path).map_err(|e| format!("Failed to read feature: {}", e))
+}
+
+/// Extract the title from a feature specification file content.
+fn extract_feature_title(content: &str, path: &std::path::Path) -> String {
+    // Try to find a markdown h1 header
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("# ") {
+            return trimmed[2..].trim().to_string();
+        }
+    }
+    
+    // Fallback to filename
+    path.file_stem()
+        .map(|s| s.to_string_lossy().to_string())
+        .unwrap_or_else(|| "Untitled Feature".to_string())
+}
+
+// =============================================================================
 // Project File Browser Commands
 // =============================================================================
 
