@@ -4,7 +4,7 @@
 variable "app_name" {
   description = "Name of the application"
   type        = string
-  
+
   validation {
     condition     = can(regex("^[a-z][a-z0-9-]*$", var.app_name))
     error_message = "App name must start with a letter and contain only lowercase letters, numbers, and hyphens."
@@ -15,7 +15,7 @@ variable "environment" {
   description = "Deployment environment"
   type        = string
   default     = "dev"
-  
+
   validation {
     condition     = contains(["dev", "staging", "prod"], var.environment)
     error_message = "Environment must be one of: dev, staging, prod."

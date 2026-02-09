@@ -2,7 +2,7 @@
 
 terraform {
   required_version = ">= 1.5.0"
-  
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -13,7 +13,7 @@ terraform {
 
 provider "aws" {
   region = var.region
-  
+
   default_tags {
     tags = local.common_tags
   }
@@ -34,11 +34,11 @@ locals {
 resource "aws_ecr_repository" "app" {
   name                 = var.app_name
   image_tag_mutability = "MUTABLE"
-  
+
   image_scanning_configuration {
     scan_on_push = true
   }
-  
+
   encryption_configuration {
     encryption_type = "AES256"
   }
@@ -47,7 +47,7 @@ resource "aws_ecr_repository" "app" {
 # ECS Cluster
 resource "aws_ecs_cluster" "main" {
   name = "${var.app_name}-cluster"
-  
+
   setting {
     name  = "containerInsights"
     value = "enabled"
@@ -69,12 +69,12 @@ resource "aws_ecs_task_definition" "app" {
   memory                   = var.memory
   execution_role_arn       = aws_iam_role.ecs_execution.arn
   task_role_arn            = aws_iam_role.ecs_task.arn
-  
+
   container_definitions = jsonencode([
     {
       name  = var.app_name
       image = "${aws_ecr_repository.app.repository_url}:${var.container_tag}"
-      
+
       portMappings = [
         {
           containerPort = 8000
@@ -82,7 +82,7 @@ resource "aws_ecs_task_definition" "app" {
           protocol      = "tcp"
         }
       ]
-      
+
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -91,7 +91,7 @@ resource "aws_ecs_task_definition" "app" {
           "awslogs-stream-prefix" = "ecs"
         }
       }
-      
+
       healthCheck = {
         command     = ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
         interval    = 30
@@ -106,7 +106,7 @@ resource "aws_ecs_task_definition" "app" {
 # ECS Execution Role
 resource "aws_iam_role" "ecs_execution" {
   name = "${var.app_name}-ecs-execution"
-  
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
@@ -129,7 +129,7 @@ resource "aws_iam_role_policy_attachment" "ecs_execution" {
 # ECS Task Role
 resource "aws_iam_role" "ecs_task" {
   name = "${var.app_name}-ecs-task"
-  
+
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [

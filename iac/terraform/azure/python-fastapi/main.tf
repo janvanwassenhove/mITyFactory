@@ -3,7 +3,7 @@
 
 terraform {
   required_version = ">= 1.6.0"
-  
+
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
@@ -102,7 +102,7 @@ locals {
   full_name = "${var.app_name}-${var.environment}"
   # Azure resource names must be lowercase and use hyphens
   resource_name = lower(replace(local.full_name, "_", "-"))
-  
+
   common_tags = merge(
     var.tags,
     {

@@ -84,7 +84,7 @@ variable "tags" {
 
 locals {
   full_name = "${var.app_name}-${var.environment}"
-  
+
   common_tags = merge(
     var.tags,
     {
@@ -94,7 +94,7 @@ locals {
       Runtime     = "python-fastapi"
     }
   )
-  
+
   container_image_full = "${var.container_image}:${var.container_tag}"
 }
 

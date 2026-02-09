@@ -3,7 +3,7 @@
 
 terraform {
   required_version = ">= 1.6.0"
-  
+
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -18,7 +18,7 @@ terraform {
 
 provider "aws" {
   region = var.region
-  
+
   default_tags {
     tags = local.common_tags
   }
@@ -110,7 +110,7 @@ variable "tags" {
 
 locals {
   full_name = "${var.app_name}-${var.environment}"
-  
+
   common_tags = merge(
     var.tags,
     {
@@ -135,7 +135,7 @@ data "aws_vpc" "default" {
 
 data "aws_subnets" "default" {
   count = length(var.subnet_ids) == 0 ? 1 : 0
-  
+
   filter {
     name   = "vpc-id"
     values = [local.vpc_id]
@@ -216,7 +216,7 @@ resource "aws_ecs_task_definition" "app" {
       name      = var.app_name
       image     = "${aws_ecr_repository.app.repository_url}:${var.container_tag}"
       essential = true
-      
+
       portMappings = [
         {
           containerPort = var.container_port
@@ -224,7 +224,7 @@ resource "aws_ecs_task_definition" "app" {
           protocol      = "tcp"
         }
       ]
-      
+
       healthCheck = {
         command     = ["CMD-SHELL", "curl -f http://localhost:${var.container_port}${var.health_check_path} || exit 1"]
         interval    = 30
@@ -232,7 +232,7 @@ resource "aws_ecs_task_definition" "app" {
         retries     = 3
         startPeriod = 60
       }
-      
+
       logConfiguration = {
         logDriver = "awslogs"
         options = {
@@ -241,7 +241,7 @@ resource "aws_ecs_task_definition" "app" {
           awslogs-stream-prefix = "ecs"
         }
       }
-      
+
       environment = [
         {
           name  = "ENVIRONMENT"
