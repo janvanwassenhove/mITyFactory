@@ -835,7 +835,7 @@ enum WcagLevel {
 /// WCAG success criterion categories
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[allow(dead_code)]
-enum WcagRule {
+pub enum WcagRule {
     NonTextContent,        // 1.1.1
     InputPurpose,          // 1.3.5
     ContrastMinimum,       // 1.4.3

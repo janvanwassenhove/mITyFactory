@@ -1,0 +1,96 @@
+# {{project_name}} - .NET Blazor Fullstack
+
+## Build Outputs
+artifacts/
+bin/
+obj/
+out/
+
+## IDE
+.vs/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## .NET
+*.dll
+*.exe
+*.pdb
+*.mdb
+*.cache
+*.pidb
+project.lock.json
+project.fragment.lock.json
+*_i.c
+*_p.c
+*.ilk
+*.meta
+*.ncb
+*.obj
+*.iobj
+*.ipdb
+*.pgc
+*.pgd
+*.rsp
+*.sbr
+*.tlb
+*.tli
+*.tlh
+*.tmp
+*.tmp_proj
+*_wpftmp.csproj
+*.log
+*.vspscc
+*.vssscc
+.builds
+*.pidb
+*.svclog
+*.scc
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+nuget.exe
+nuget.config
+!Directory.Packages.props
+
+## Test Results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+coverage/
+
+## User Secrets
+secrets.json
+
+## Docker
+docker-compose.override.yml
+
+## Helm
+deploy/helm/charts/
+
+## Environment
+.env
+.env.local
+.env.*.local
+*.env
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Logs
+logs/
+*.log
+
+## Temp
+tmp/
+temp/

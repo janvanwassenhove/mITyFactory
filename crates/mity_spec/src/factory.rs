@@ -19,8 +19,10 @@ use crate::writer::SpecWriter;
 pub const REQUIRED_FILES: &[&str] = &[
     "constitution.md",
     "principles.md",
+    "testing-requirements.md",
     "glossary.md",
     "roadmap.md",
+    "GOVERNANCE.md",
 ];
 
 /// Factory Spec Kit manager.
@@ -85,6 +87,12 @@ impl FactorySpec {
         // Write roadmap
         Self::write_factory_roadmap(&spec_dir)?;
 
+        // Write testing requirements
+        Self::write_factory_testing_requirements(&spec_dir)?;
+
+        // Write governance
+        Self::write_factory_governance(&spec_dir)?;
+
         debug!("Factory Spec Kit initialized successfully");
 
         // Reopen to get the properly initialized kit
@@ -141,6 +149,12 @@ impl FactorySpec {
 
         // Write roadmap
         Self::write_app_roadmap(&spec_dir, name)?;
+
+        // Write testing requirements
+        Self::write_app_testing_requirements(&spec_dir)?;
+
+        // Write governance
+        Self::write_app_governance(&spec_dir)?;
 
         debug!("App Spec Kit initialized successfully for '{}'", name);
 
@@ -1006,6 +1020,204 @@ Update this roadmap as the project evolves.
             app_name, app_name
         );
         let path = spec_dir.join("roadmap.md");
+        fs::write(path, content)?;
+        Ok(())
+    }
+
+    fn write_factory_testing_requirements(spec_dir: &Path) -> SpecResult<()> {
+        let content = r#"# mITyFactory Testing Requirements
+
+## Purpose
+
+This document defines the testing requirements for developing new features in mITyFactory.
+
+## Test Categories
+
+### Unit Tests
+
+**Required for**: All public functions, structs, and modules.
+
+**Coverage targets**:
+- Core business logic: 90%+
+- Public APIs: 100%
+- Utility functions: 80%+
+
+### Integration Tests
+
+**Required for**: Crate-level interactions and external dependencies.
+
+**Location**: `crates/<crate_name>/tests/`
+
+### Documentation Tests
+
+**Required for**: All public API examples in doc comments.
+
+### Template Tests
+
+**Required for**: All project templates.
+
+**Run via**: `mity smoke-templates`
+
+### Accessibility Tests
+
+**Required for**: All UI components.
+
+**Standards**: WCAG 2.1 AA compliance.
+
+## Running Tests
+
+```bash
+# All tests
+cargo test --workspace
+
+# Specific crate
+cargo test -p mity_spec
+
+# With coverage
+cargo tarpaulin --out Html
+
+# Template smoke tests
+cargo run -p mity_cli -- smoke-templates
+```
+
+## Definition of Done
+
+- Code compiles without warnings
+- All tests pass
+- Code coverage meets targets
+- Clippy lints pass
+- Documentation complete
+"#;
+        let path = spec_dir.join("testing-requirements.md");
+        fs::write(path, content)?;
+        Ok(())
+    }
+
+    fn write_factory_governance(spec_dir: &Path) -> SpecResult<()> {
+        let content = r#"# Spec Kit Governance
+
+This document describes how specifications are maintained and enforced in mITyFactory.
+
+## Spec Kit Files
+
+| Document | Purpose | Update Frequency |
+|----------|---------|------------------|
+| `constitution.md` | Inviolable rules | Rarely (requires ADR) |
+| `principles.md` | Design guidance | As needed |
+| `testing-requirements.md` | Testing standards | As needed |
+| `glossary.md` | Terminology | As terms emerge |
+| `roadmap.md` | Future plans | Quarterly |
+| `features/*.yaml` | Feature specs | Per feature |
+
+## Enforcement Mechanisms
+
+### GitHub Copilot Instructions
+
+The `.github/copilot-instructions.md` file ensures AI assistants reference specs.
+
+### CI/CD Validation
+
+The `spec-validation.yaml` workflow automatically:
+- Verifies spec kit files exist
+- Validates feature spec YAML syntax
+- Checks for potential constitution violations
+
+### Code Review
+
+Reviewers should verify:
+- [ ] PR follows the relevant feature spec
+- [ ] No constitution violations
+- [ ] Tests meet testing-requirements.md standards
+
+## Constitution Changes
+
+The constitution can only be amended through:
+1. **ADR Proposal**: Create `docs/adr/ADR-XXXX-title.md`
+2. **Review**: Allow time for feedback
+3. **Consensus**: Maintainers must agree
+4. **Documentation**: Update constitution with amendment date
+"#;
+        let path = spec_dir.join("GOVERNANCE.md");
+        fs::write(path, content)?;
+        Ok(())
+    }
+
+    fn write_app_testing_requirements(spec_dir: &Path) -> SpecResult<()> {
+        let content = r#"# Testing Requirements
+
+This document defines the testing standards for this application.
+
+## Test Categories
+
+### Unit Tests
+
+**Required for**: All public functions, structs, and modules.
+
+**Coverage targets**:
+- Core business logic: 80%+
+- Public APIs: 100%
+- Utility functions: 70%+
+
+### Integration Tests
+
+**Required for**: Cross-module interactions and external dependencies.
+
+### Documentation Tests
+
+**Required for**: All public API examples in doc comments.
+
+## Definition of Done
+
+- All tests pass
+- No decrease in coverage
+- New code has corresponding tests
+- CI validates all tests before merge
+
+## Running Tests
+
+Use appropriate test commands for your tech stack.
+"#;
+        let path = spec_dir.join("testing-requirements.md");
+        fs::write(path, content)?;
+        Ok(())
+    }
+
+    fn write_app_governance(spec_dir: &Path) -> SpecResult<()> {
+        let content = r#"# Governance
+
+This document describes how specifications are maintained.
+
+## Spec Kit Files
+
+| Document | Purpose | Update Frequency |
+|----------|---------|------------------|
+| `constitution.md` | Project rules | Rarely |
+| `principles.md` | Design guidance | As needed |
+| `testing-requirements.md` | Testing standards | As needed |
+| `glossary.md` | Terminology | As terms emerge |
+| `roadmap.md` | Future plans | Quarterly |
+| `features/*.yaml` | Feature specs | Per feature |
+
+## Change Process
+
+### Feature Specs
+
+**Create a feature spec when**:
+- Adding new user-facing functionality
+- Making architectural changes
+
+**Update a feature spec when**:
+- Requirements change during implementation
+- Status changes (draft → implemented → validated)
+
+## Code Review Checklist
+
+- [ ] PR follows the relevant feature spec
+- [ ] No constitution violations
+- [ ] Tests meet testing-requirements.md standards
+- [ ] Documentation complete
+"#;
+        let path = spec_dir.join("GOVERNANCE.md");
         fs::write(path, content)?;
         Ok(())
     }

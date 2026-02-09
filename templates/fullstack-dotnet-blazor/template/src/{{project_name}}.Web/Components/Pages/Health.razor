@@ -1,0 +1,141 @@
+@page "/health"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject ILogger<Health> Logger
+
+<PageTitle>Health - {{project_name}}</PageTitle>
+
+<div class="page-header">
+    <h1>System Health</h1>
+    <button class="btn btn-secondary" @onclick="RefreshHealth" disabled="@_loading">
+        @(_loading ? "Refreshing..." : "Refresh")
+    </button>
+</div>
+
+@if (_loading && _healthData is null)
+{
+    <div class="loading">Loading health status...</div>
+}
+else if (_error is not null)
+{
+    <div class="error-message">
+        <p>Error loading health status: @_error</p>
+        <button class="btn btn-secondary" @onclick="RefreshHealth">Retry</button>
+    </div>
+}
+else if (_healthData is not null)
+{
+    <div class="health-overview">
+        <div class="health-status @GetStatusClass(_healthData.Status)">
+            <span class="status-icon">@GetStatusIcon(_healthData.Status)</span>
+            <span class="status-text">@_healthData.Status</span>
+        </div>
+        <div class="last-checked">
+            Last checked: @_lastChecked?.ToString("HH:mm:ss") 
+        </div>
+    </div>
+
+    <div class="health-checks">
+        <h2>Health Checks</h2>
+        @if (_healthData.Entries?.Any() == true)
+        {
+            <div class="checks-grid">
+                @foreach (var check in _healthData.Entries)
+                {
+                    <div class="check-card @GetStatusClass(check.Status)">
+                        <div class="check-header">
+                            <span class="check-icon">@GetStatusIcon(check.Status)</span>
+                            <span class="check-name">@check.Key</span>
+                        </div>
+                        <div class="check-status">@check.Status</div>
+                        @if (!string.IsNullOrEmpty(check.Description))
+                        {
+                            <div class="check-description">@check.Description</div>
+                        }
+                        @if (check.Duration.HasValue)
+                        {
+                            <div class="check-duration">@check.Duration.Value.TotalMilliseconds.ToString("F2")ms</div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="no-checks">No detailed health checks available.</p>
+        }
+    </div>
+}
+
+@code {
+    private HealthReport? _healthData;
+    private bool _loading = true;
+    private string? _error;
+    private DateTime? _lastChecked;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RefreshHealth();
+    }
+
+    private async Task RefreshHealth()
+    {
+        _loading = true;
+        _error = null;
+        StateHasChanged();
+
+        try
+        {
+            var client = HttpClientFactory.CreateClient("Api");
+            var response = await client.GetAsync("health");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                _healthData = await response.Content.ReadFromJsonAsync<HealthReport>();
+                _lastChecked = DateTime.Now;
+            }
+            else
+            {
+                _error = $"API returned {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to fetch health status");
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string GetStatusClass(string? status) => status?.ToLowerInvariant() switch
+    {
+        "healthy" => "status-healthy",
+        "degraded" => "status-degraded",
+        "unhealthy" => "status-unhealthy",
+        _ => "status-unknown"
+    };
+
+    private static string GetStatusIcon(string? status) => status?.ToLowerInvariant() switch
+    {
+        "healthy" => "✓",
+        "degraded" => "⚠",
+        "unhealthy" => "✗",
+        _ => "?"
+    };
+
+    private record HealthReport
+    {
+        public string? Status { get; init; }
+        public Dictionary<string, HealthEntry>? Entries { get; init; }
+    }
+
+    private record HealthEntry
+    {
+        public string? Status { get; init; }
+        public string? Description { get; init; }
+        public TimeSpan? Duration { get; init; }
+    }
+}

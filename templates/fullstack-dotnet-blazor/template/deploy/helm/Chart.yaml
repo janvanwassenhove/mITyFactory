@@ -1,0 +1,14 @@
+# {{project_name}} Helm Chart
+apiVersion: v2
+name: {{project_name}}
+description: A Helm chart for {{project_name}} - .NET Blazor Fullstack Application
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+keywords:
+  - dotnet
+  - blazor
+  - fullstack
+  - api
+maintainers:
+  - name: {{project_name}} Team

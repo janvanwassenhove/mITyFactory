@@ -1,0 +1,14 @@
+{
+  "sessionId": "e15c9372-db17-47a0-b15c-0bbb7e5a5a85",
+  "appName": "my-app",
+  "templateId": "fullstack-springboot-vue",
+  "stackTags": [
+    "java",
+    "spring",
+    "vue",
+    "fullstack"
+  ],
+  "iac": {},
+  "changes": {},
+  "confidence": 0.8
+}

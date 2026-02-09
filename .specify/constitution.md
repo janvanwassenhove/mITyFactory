@@ -42,7 +42,11 @@ Every decision, action, and outcome is logged and traceable. The factory maintai
 
 All user interfaces—whether in the factory UI or generated applications—must be accessible. We commit to WCAG 2.1 AA compliance. Accessibility is a quality gate, not a nice-to-have.
 
-### 7. Test-Driven UI Development
+### 7. Cost-Aware Operations
+
+The factory tracks and reports costs for all LLM operations. Users must have visibility into token usage and estimated costs. The system works with or without LLM keys, ensuring core functionality is always available.
+
+### 8. Test-Driven UI Development
 
 All critical UI functionality must have corresponding tests to prevent regressions. This includes:
 
@@ -64,4 +68,4 @@ This constitution may be amended through the ADR (Architecture Decision Record) 
 
 ---
 
-*Last Updated: 2026-01-21*
+*Last Updated: 2026-02-01*

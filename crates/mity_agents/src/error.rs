@@ -29,6 +29,9 @@ pub enum AgentError {
     #[error("Spec error: {0}")]
     Spec(#[from] mity_spec::SpecError),
 
+    #[error("Spec Kit error: {0}")]
+    SpecKit(String),
+
     #[error("Core error: {0}")]
     Core(#[from] mity_core::CoreError),
 

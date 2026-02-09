@@ -1,0 +1,150 @@
+{
+  "sessionId": "e15c9372-db17-47a0-b15c-0bbb7e5a5a85",
+  "runState": "readyToTest",
+  "currentStation": "done",
+  "stations": [
+    {
+      "name": "intake",
+      "label": "Gather Requirements",
+      "state": "done",
+      "agent": "analyst",
+      "startedAt": "2026-02-05T15:36:18.809454700Z",
+      "completedAt": "2026-02-05T15:36:18.809840500Z"
+    },
+    {
+      "name": "analyze",
+      "label": "Analyze & Clarify",
+      "state": "done",
+      "agent": "analyst",
+      "startedAt": "2026-02-05T15:36:18.848117500Z",
+      "completedAt": "2026-02-05T15:36:18.848456600Z"
+    },
+    {
+      "name": "architect",
+      "label": "Design Architecture",
+      "state": "done",
+      "agent": "architect",
+      "startedAt": "2026-02-05T15:36:18.849230900Z",
+      "completedAt": "2026-02-05T15:36:18.849654300Z"
+    },
+    {
+      "name": "scaffold",
+      "label": "Generate Scaffold",
+      "state": "done",
+      "agent": "implementer",
+      "startedAt": "2026-02-05T15:36:18.850168200Z",
+      "completedAt": "2026-02-05T15:36:18.850648800Z"
+    },
+    {
+      "name": "implement",
+      "label": "Implement Code",
+      "state": "done",
+      "agent": "implementer",
+      "startedAt": "2026-02-05T15:36:18.851207700Z",
+      "completedAt": "2026-02-05T15:37:20.185420100Z"
+    },
+    {
+      "name": "test",
+      "label": "Write Tests",
+      "state": "done",
+      "agent": "tester",
+      "startedAt": "2026-02-05T15:37:20.187445Z",
+      "completedAt": "2026-02-05T15:37:20.188501800Z"
+    },
+    {
+      "name": "review",
+      "label": "Code Review",
+      "state": "done",
+      "agent": "reviewer",
+      "startedAt": "2026-02-05T15:37:20.190357500Z",
+      "completedAt": "2026-02-05T15:37:20.190737500Z"
+    },
+    {
+      "name": "secure",
+      "label": "Security Scan",
+      "state": "done",
+      "agent": "security",
+      "startedAt": "2026-02-05T15:37:20.192021900Z",
+      "completedAt": "2026-02-05T15:37:20.192655300Z"
+    },
+    {
+      "name": "iac-validate",
+      "label": "Validate IaC",
+      "state": "done",
+      "agent": "devops",
+      "startedAt": "2026-02-05T15:37:20.193705100Z",
+      "completedAt": "2026-02-05T15:37:20.194156300Z"
+    },
+    {
+      "name": "gate",
+      "label": "Quality Gate",
+      "state": "done",
+      "agent": "reviewer",
+      "startedAt": "2026-02-05T15:37:20.195186Z",
+      "completedAt": "2026-02-05T15:37:20.195487Z"
+    },
+    {
+      "name": "build-test",
+      "label": "Build & Test",
+      "state": "done",
+      "agent": "tester",
+      "startedAt": "2026-02-05T15:37:20.196877600Z",
+      "completedAt": "2026-02-05T15:37:56.866148600Z"
+    },
+    {
+      "name": "launch",
+      "label": "Launch Application",
+      "state": "done",
+      "agent": "devops",
+      "startedAt": "2026-02-05T15:37:56.867299800Z",
+      "completedAt": "2026-02-05T15:38:13.872862300Z"
+    },
+    {
+      "name": "done",
+      "label": "Complete",
+      "state": "done",
+      "agent": "analyst",
+      "startedAt": "2026-02-05T15:38:13.874209800Z",
+      "completedAt": "2026-02-05T15:38:13.874586100Z"
+    }
+  ],
+  "lastEvent": "Application ready to test!",
+  "readyInfo": {
+    "appPath": "C:\\devenv\\workspaces\\mityfactory\\workspaces\\my-app",
+    "runCommands": [
+      "mvnw.cmd spring-boot:run"
+    ],
+    "urls": [
+      {
+        "name": "API",
+        "url": "http://localhost:8080"
+      },
+      {
+        "name": "Health",
+        "url": "http://localhost:8080/actuator/health"
+      }
+    ],
+    "testCommands": [
+      "mvnw.cmd test"
+    ],
+    "notes": "Application launched from java-springboot template. Click URLs to test!",
+    "buildPassed": true,
+    "appLaunched": true
+  },
+  "costSummary": {
+    "totalExpected": 0.0057732,
+    "totalMin": 0.0057732,
+    "totalMax": 0.0057732,
+    "llmCost": 0.0057732,
+    "computeCost": 0.0,
+    "monthlyInfra": 0.0,
+    "currency": "$",
+    "llmCalls": 2,
+    "totalTokens": 5336,
+    "exceedsThreshold": false,
+    "threshold": 5.0,
+    "summary": "Session: $0.01 (±0%) | Monthly: $0.00/mo (±0%)"
+  },
+  "createdAt": "2026-02-05T15:36:18.805921900Z",
+  "updatedAt": "2026-02-09T10:44:23.263352500Z"
+}

@@ -42,6 +42,7 @@ pub mod context;
 pub mod engine;
 pub mod error;
 pub mod executor;
+pub mod git;
 pub mod registry;
 pub mod station;
 pub mod stations;
@@ -52,6 +53,7 @@ pub use context::{IacConfig, StackType, WorkflowContext};
 pub use engine::{LegacyStation, WorkflowEngine};
 pub use error::{CoreError, CoreResult};
 pub use executor::{ExecutionLog, ExecutionLogEntry, ExecutionState, Workflow, WorkflowExecutor, WorkflowStation, Workflows};
+pub use git::{GitCommit, GitOps, GitRemote, GitRepo, GitStatus};
 pub use registry::StationRegistry;
 pub use station::{
     Artifact, ArtifactType, LogEntry, LogLevel, Station, StationId, StationInput,

@@ -1,0 +1,179 @@
+# .NET Blazor Fullstack Template
+# Modern .NET 10 monorepo with Blazor Web App, EF Core, MassTransit, and observability
+
+id: fullstack-dotnet-blazor
+name: .NET Blazor Fullstack
+description: Enterprise-ready .NET 10 monorepo with Blazor Web App (SSR + Interactive), EF Core, MassTransit, OpenTelemetry, and Helm
+version: "1.0.0"
+author: mITyFactory
+category: fullstack
+status: production
+
+# Language/Runtime Configuration
+runtime:
+  language: csharp
+  version: "13"
+  package_manager: nuget
+
+# Container Configuration
+container:
+  image: mcr.microsoft.com/dotnet/aspnet
+  tag: "10.0"
+  build_command:
+    - dotnet
+    - build
+    - --configuration
+    - Release
+  test_command:
+    - dotnet
+    - test
+    - --configuration
+    - Release
+    - --no-build
+  run_command:
+    - docker-compose
+    - up
+  ports:
+    - 5000
+    - 5001
+  workdir: /app
+
+# Build/Test/Lint Commands
+commands:
+  install:
+    - dotnet restore
+  build:
+    - dotnet build --configuration Release
+  test:
+    - dotnet test --configuration Release
+  lint:
+    - dotnet format --verify-no-changes
+  format:
+    - dotnet format
+  run:
+    - docker-compose up
+  migrate:
+    - dotnet ef database update --project src/{{project_name}}.Infrastructure
+
+# DevContainer Configuration
+devcontainer:
+  image: mcr.microsoft.com/devcontainers/dotnet:10.0
+  features:
+    ghcr.io/devcontainers/features/docker-in-docker:2: {}
+    ghcr.io/devcontainers-contrib/features/terraform-asdf:2: {}
+    ghcr.io/devcontainers/features/kubectl-helm-minikube:1: {}
+  extensions:
+    - ms-dotnettools.csharp
+    - ms-dotnettools.csdevkit
+    - ms-dotnettools.blazorwasm-companion
+    - EditorConfig.EditorConfig
+    - redhat.vscode-yaml
+    - hashicorp.terraform
+    - ms-kubernetes-tools.vscode-kubernetes-tools
+  post_create:
+    - dotnet restore
+    - dotnet tool restore
+  ports:
+    - 5000
+    - 5001
+    - 5672
+    - 15672
+
+# IaC Support Configuration
+iac:
+  enabled: true
+  providers:
+    - provider: terraform
+      clouds:
+        - aws
+        - azure
+        - gcp
+      base_module: iac/terraform/base
+  outputs:
+    - name: container_image
+      description: Container image name for deployment
+      type: string
+    - name: container_tag
+      description: Container image tag
+      type: string
+      default: latest
+    - name: web_port
+      description: Port the Blazor web app listens on
+      type: number
+      default: "5000"
+    - name: api_port
+      description: Port the API listens on
+      type: number
+      default: "5001"
+    - name: health_check_path
+      description: Health check endpoint path
+      type: string
+      default: /health
+
+# Template Variables
+variables:
+  - name: project_name
+    description: Name of the project (PascalCase)
+    required: true
+  - name: dotnet_version
+    description: .NET SDK version
+    default: "10.0"
+  - name: message_broker
+    description: Message broker to use
+    default: rabbitmq
+    options:
+      - rabbitmq
+      - azureservicebus
+  - name: database_provider
+    description: Database provider for EF Core
+    default: postgresql
+    options:
+      - postgresql
+      - sqlserver
+      - sqlite
+  - name: enable_helm
+    description: Include Helm charts
+    default: true
+  - name: include_sample_features
+    description: Include sample features (CRUD, messaging)
+    default: true
+
+# Stack Features
+features:
+  - name: blazor-web-app
+    description: Blazor Web App with SSR and Interactive modes
+    included: true
+  - name: ef-core
+    description: Entity Framework Core with migrations
+    included: true
+  - name: masstransit
+    description: MassTransit for messaging (RabbitMQ/Azure Service Bus)
+    included: true
+  - name: opentelemetry
+    description: OpenTelemetry for distributed tracing and metrics
+    included: true
+  - name: serilog
+    description: Structured logging with Serilog
+    included: true
+  - name: testcontainers
+    description: Testcontainers for integration tests
+    included: true
+  - name: central-packages
+    description: Central package management with Directory.Build.props
+    included: true
+  - name: helm-charts
+    description: Kubernetes Helm charts
+    included: true
+
+tags:
+  - dotnet
+  - blazor
+  - csharp
+  - efcore
+  - masstransit
+  - opentelemetry
+  - fullstack
+  - monorepo
+  - kubernetes
+  - helm
+  - containerized

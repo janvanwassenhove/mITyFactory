@@ -75,6 +75,12 @@ impl SpecKit {
         // Create roadmap
         kit.write_roadmap()?;
 
+        // Create testing requirements
+        kit.write_testing_requirements()?;
+
+        // Create governance
+        kit.write_governance()?;
+
         debug!("Spec Kit initialized successfully");
         Ok(kit)
     }
@@ -266,6 +272,105 @@ Focus on core functionality and proof of concept.
 - Multi-repo support
 "#;
         let path = self.spec_dir().join("roadmap.md");
+        fs::write(path, content)?;
+        Ok(())
+    }
+
+    fn write_testing_requirements(&self) -> SpecResult<()> {
+        let content = r#"# Testing Requirements
+
+This document defines the testing standards for this project.
+
+## Test Categories
+
+### Unit Tests
+
+**Required for**: All public functions, structs, and modules.
+
+**Coverage targets**:
+- Core business logic: 80%+
+- Public APIs: 100%
+- Utility functions: 70%+
+
+### Integration Tests
+
+**Required for**: Cross-module interactions and external dependencies.
+
+### Documentation Tests
+
+**Required for**: All public API examples in doc comments.
+
+## Definition of Done
+
+- All tests pass
+- No decrease in coverage
+- New code has corresponding tests
+- CI validates all tests before merge
+
+## Running Tests
+
+```bash
+# All tests
+cargo test --workspace
+
+# Specific module
+cargo test -p <crate_name>
+
+# With coverage
+cargo tarpaulin --out Html
+```
+"#;
+        let path = self.spec_dir().join("testing-requirements.md");
+        fs::write(path, content)?;
+        Ok(())
+    }
+
+    fn write_governance(&self) -> SpecResult<()> {
+        let content = r#"# Governance
+
+This document describes how specifications are maintained and enforced.
+
+## Spec Kit Files
+
+| Document | Purpose | Update Frequency |
+|----------|---------|------------------|
+| `constitution.md` | Inviolable rules | Rarely (requires ADR) |
+| `principles.md` | Design guidance | As needed |
+| `testing-requirements.md` | Testing standards | As needed |
+| `glossary.md` | Terminology | As terms emerge |
+| `roadmap.md` | Future plans | Quarterly |
+| `features/*.yaml` | Feature specs | Per feature |
+
+## Change Process
+
+### Constitution Changes
+
+The constitution can only be amended through:
+1. **ADR Proposal**: Create an Architecture Decision Record
+2. **Review**: Allow time for feedback
+3. **Consensus**: Stakeholders must agree
+4. **Documentation**: Update constitution with amendment date
+
+### Feature Specs
+
+**Create a feature spec when**:
+- Adding new user-facing functionality
+- Making architectural changes
+- Adding new commands or APIs
+
+**Update a feature spec when**:
+- Requirements change during implementation
+- Acceptance criteria need clarification
+- Status changes (draft → implemented → validated)
+
+## Code Review Checklist
+
+- [ ] PR follows the relevant feature spec
+- [ ] No constitution violations
+- [ ] Tests meet testing-requirements.md standards
+- [ ] Documentation complete
+"#;
+        let path = self.spec_dir().join("GOVERNANCE.md");
         fs::write(path, content)?;
         Ok(())
     }

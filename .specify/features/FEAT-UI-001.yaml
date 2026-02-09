@@ -1,0 +1,64 @@
+id: FEAT-UI-001
+title: Tauri Desktop UI
+description: |
+  Desktop application built with Tauri 2.0 providing a graphical interface
+  for mITyFactory. Features Alpine.js for reactivity and a custom accessible
+  design system following WCAG 2.1 AA standards.
+status: implemented
+priority: high
+created: 2026-01-18
+updated: 2026-02-01
+
+acceptance_criteria:
+  - Desktop application runs on Windows, macOS, and Linux
+  - Dashboard shows project overview and quick actions
+  - Workspace view for active project development
+  - Chat interface integrated with mity_chat
+  - Spec Kit browser for viewing/editing specifications
+  - WCAG 2.1 AA accessibility compliance
+  - Keyboard navigation for all interactive elements
+  - Consistent design system with line-based icons
+  - Dark theme with proper color contrast ratios
+
+components:
+  - path: crates/mity_ui/src/main.rs
+    purpose: Tauri application entry point
+  - path: crates/mity_ui/src/commands.rs
+    purpose: Tauri command handlers
+  - path: crates/mity_ui/dist/index.html
+    purpose: Main HTML with SVG icon definitions
+  - path: crates/mity_ui/dist/styles.css
+    purpose: Design system CSS
+  - path: crates/mity_ui/dist/app.js
+    purpose: Alpine.js application logic
+  - path: crates/mity_ui/tauri.conf.json
+    purpose: Tauri configuration
+
+dependencies:
+  - FEAT-SPEC-KIT-001
+  - FEAT-CHAT-001
+
+related_adrs:
+  - ADR-0007-accessibility-first-design.md
+
+ui_components:
+  views:
+    - dashboard: Project overview with stats and recent activity
+    - workspace: Active project development area
+    - specs: Specification browser and editor
+    - workflows: Workflow visualization and execution
+    - logs: Build and execution logs
+    - terminal: Embedded terminal
+    - settings: Application configuration
+
+  design_system:
+    icons: Line-based SVG symbols (Feather-style)
+    colors: CSS custom properties with dark theme
+    typography: Inter (sans), JetBrains Mono (mono)
+    spacing: Consistent scale (xs, sm, md, base, lg, xl)
+
+notes: |
+  The UI follows accessibility-first design per ADR-0007 and
+  the constitution's "Inclusive by Design" tenet.
+  All interactive elements must be keyboard accessible.
+  Icon-only buttons require aria-label attributes.

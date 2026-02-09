@@ -41,6 +41,7 @@ pub mod implementer;
 pub mod reviewer;
 pub mod roles;
 pub mod security;
+pub mod speckit;
 pub mod tester;
 pub mod traits;
 
@@ -54,8 +55,13 @@ pub use implementer::ImplementerAgent;
 pub use reviewer::ReviewerAgent;
 pub use roles::{AgentRole, RoleRegistry};
 pub use security::SecurityAgent;
+pub use speckit::{
+    create_spec_aware_context, has_spec_kit, AgentGuidance, Constitution, ConstitutionViolation,
+    Principle, Principles, SpecKitContext, Tenet, TestingRequirements,
+};
 pub use tester::TesterAgent;
 pub use traits::{
     ActionType, AgentContext, AgentHandler, AgentInput, AgentIssue, AgentOutput, Artifact,
-    ArtifactType, IssueSeverity, ProposedAction,
+    ArtifactType, IssueSeverity, PrincipleSummary, ProposedAction, SpecKitGuidance,
+    TenetSummary, TestingGuidance,
 };

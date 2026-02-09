@@ -1,0 +1,161 @@
+@page "/items"
+@rendermode InteractiveServer
+@inject IHttpClientFactory HttpClientFactory
+@inject ILogger<Items> Logger
+
+<PageTitle>Items - {{project_name}}</PageTitle>
+
+<div class="page-header">
+    <h1>Items</h1>
+    <button class="btn btn-primary" @onclick="ShowCreateModal">
+        + Add Item
+    </button>
+</div>
+
+@if (_loading)
+{
+    <div class="loading">Loading items...</div>
+}
+else if (_error is not null)
+{
+    <div class="error-message">
+        <p>Error loading items: @_error</p>
+        <button class="btn btn-secondary" @onclick="LoadItems">Retry</button>
+    </div>
+}
+else if (_items.Count == 0)
+{
+    <div class="empty-state">
+        <p>No items found. Create your first item!</p>
+    </div>
+}
+else
+{
+    <div class="items-grid">
+        @foreach (var item in _items)
+        {
+            <div class="item-card">
+                <h3>@item.Name</h3>
+                <p>@item.Description</p>
+                <div class="item-meta">
+                    <span class="badge @(item.IsActive ? "badge-success" : "badge-inactive")">
+                        @(item.IsActive ? "Active" : "Inactive")
+                    </span>
+                    <span class="date">Created: @item.CreatedAt.ToShortDateString()</span>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@if (_showModal)
+{
+    <div class="modal-overlay" @onclick="HideModal">
+        <div class="modal" @onclick:stopPropagation="true">
+            <h2>Create Item</h2>
+            <EditForm Model="_newItem" OnValidSubmit="CreateItem">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+                
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <InputText id="name" @bind-Value="_newItem.Name" class="form-control" />
+                </div>
+                
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <InputTextArea id="description" @bind-Value="_newItem.Description" class="form-control" />
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" @onclick="HideModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" disabled="@_creating">
+                        @(_creating ? "Creating..." : "Create")
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    private List<ItemDto> _items = new();
+    private bool _loading = true;
+    private string? _error;
+    private bool _showModal;
+    private bool _creating;
+    private CreateItemRequest _newItem = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadItems();
+    }
+
+    private async Task LoadItems()
+    {
+        _loading = true;
+        _error = null;
+        
+        try
+        {
+            var client = HttpClientFactory.CreateClient("Api");
+            _items = await client.GetFromJsonAsync<List<ItemDto>>("api/v1/items") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to load items");
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private void ShowCreateModal()
+    {
+        _newItem = new();
+        _showModal = true;
+    }
+
+    private void HideModal()
+    {
+        _showModal = false;
+    }
+
+    private async Task CreateItem()
+    {
+        _creating = true;
+        
+        try
+        {
+            var client = HttpClientFactory.CreateClient("Api");
+            var response = await client.PostAsJsonAsync("api/v1/items", _newItem);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                HideModal();
+                await LoadItems();
+            }
+            else
+            {
+                _error = "Failed to create item";
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Failed to create item");
+            _error = ex.Message;
+        }
+        finally
+        {
+            _creating = false;
+        }
+    }
+
+    private record CreateItemRequest
+    {
+        public string Name { get; set; } = "";
+        public string? Description { get; set; }
+    }
+}

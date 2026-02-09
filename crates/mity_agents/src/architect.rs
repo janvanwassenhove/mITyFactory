@@ -296,6 +296,47 @@ impl ArchitectAgent {
         
         notes
     }
+
+    /// Format principles from spec kit for inclusion in ADR.
+    fn format_principles_for_adr(&self, context: &crate::traits::AgentContext) -> String {
+        let Some(ref guidance) = context.spec_kit_guidance else {
+            return String::new();
+        };
+
+        if guidance.principles.is_empty() {
+            return String::new();
+        }
+
+        let mut output = String::new();
+        
+        // Select architecture-relevant principles
+        let relevant_principles: Vec<_> = guidance
+            .principles
+            .iter()
+            .filter(|p| {
+                let name_lower = p.name.to_lowercase();
+                name_lower.contains("single")
+                    || name_lower.contains("compos")
+                    || name_lower.contains("extens")
+                    || name_lower.contains("observ")
+                    || name_lower.contains("fail")
+            })
+            .collect();
+
+        if relevant_principles.is_empty() {
+            return String::new();
+        }
+
+        for principle in relevant_principles {
+            output.push_str(&format!("- **{}**: ", principle.name));
+            if !principle.implications.is_empty() {
+                output.push_str(&principle.implications.join(", "));
+            }
+            output.push('\n');
+        }
+
+        output
+    }
 }
 
 impl Default for ArchitectAgent {
@@ -330,6 +371,14 @@ impl AgentHandler for ArchitectAgent {
         // Validate input
         self.validate_input(input)?;
 
+        // Check spec kit guidance for principles
+        if let Some(ref guidance) = input.context.spec_kit_guidance {
+            info!(
+                "Architect applying {} principles from Spec Kit",
+                guidance.principles.len()
+            );
+        }
+
         // Get feature from analyst output or parse from content
         let feature: Feature = if let Some(analyst_output) = input.context.get_output(AgentRole::Analyst) {
             analyst_output
@@ -357,21 +406,40 @@ impl AgentHandler for ArchitectAgent {
             feature.title
         ));
 
-        // Create ADR if needed
+        // Create ADR if needed (per constitution tenet 1: spec-driven and tenet 4: governance)
+        // ADR location comes from spec kit governance rules
+        let adr_dir = if let Some(ref guidance) = input.context.spec_kit_guidance {
+            // Check if there's a governance rule for ADR location
+            if guidance.tenets.iter().any(|t| t.name.to_lowercase().contains("specification")) {
+                // Follow constitution - use standard ADR location
+                input.workspace.join("docs/adr")
+            } else {
+                input.workspace.join(".mity/adrs")
+            }
+        } else {
+            input.workspace.join(".mity/adrs")
+        };
+
         if analysis.requires_adr {
             let adr_id = format!("ADR-{}", chrono::Utc::now().timestamp() % 1000);
+            
+            // Include relevant principles in ADR context
+            let principles_context = self.format_principles_for_adr(&input.context);
+            let context_with_principles = if principles_context.is_empty() {
+                feature.description.clone()
+            } else {
+                format!("{}\n\n## Applicable Principles\n\n{}", feature.description, principles_context)
+            };
+
             let adr = self.create_adr(
                 &adr_id,
                 &format!("Architecture for {}", feature.title),
-                &feature.description,
+                &context_with_principles,
                 &format!("Implement using components: {}", analysis.affected_components.join(", ")),
             );
             
             let adr_content = self.render_adr(&adr);
-            let adr_path = input.workspace
-                .join(".mity")
-                .join("adrs")
-                .join(format!("{}.md", adr_id.to_lowercase()));
+            let adr_path = adr_dir.join(format!("{}.md", adr_id.to_lowercase()));
 
             output = output
                 .with_artifact(Artifact {

@@ -337,51 +337,84 @@ pub async fn get_factory_status() -> Result<FactoryStatus, String> {
 
 /// List all specification files.
 #[tauri::command]
-pub async fn list_specs() -> Result<Vec<SpecInfo>, String> {
-    let result = run_mity(&["list-specs", "--json"]).await;
+pub async fn list_specs(app_path: Option<String>) -> Result<Vec<SpecInfo>, String> {
+    // Fallback: scan .specify directory manually
+    let base_path = app_path.as_deref().unwrap_or(".");
+    let specify_dir = std::path::Path::new(base_path).join(".specify");
+    
+    let mut specs = Vec::new();
+    
+    if !specify_dir.exists() {
+        return Ok(specs);
+    }
 
-    if result.success {
-        // Try to parse JSON output
-        serde_json::from_str(&result.stdout).map_err(|e| {
-            // Fallback: return empty list if parsing fails
-            eprintln!("Failed to parse specs JSON: {}", e);
-            format!("Failed to parse specs: {}", e)
-        })
-    } else {
-        // Fallback: scan .specify directory manually
-        let mut specs = Vec::new();
-        let specify_dir = std::path::Path::new(".specify");
+    // Add constitution
+    if specify_dir.join("constitution.md").exists() {
+        specs.push(SpecInfo {
+            name: "Constitution".to_string(),
+            path: specify_dir.join("constitution.md").to_string_lossy().to_string(),
+            spec_type: "constitution".to_string(),
+        });
+    }
+    
+    // Add principles
+    if specify_dir.join("principles.md").exists() {
+        specs.push(SpecInfo {
+            name: "Principles".to_string(),
+            path: specify_dir.join("principles.md").to_string_lossy().to_string(),
+            spec_type: "principles".to_string(),
+        });
+    }
+    
+    // Add glossary
+    if specify_dir.join("glossary.md").exists() {
+        specs.push(SpecInfo {
+            name: "Glossary".to_string(),
+            path: specify_dir.join("glossary.md").to_string_lossy().to_string(),
+            spec_type: "glossary".to_string(),
+        });
+    }
+    
+    // Add roadmap
+    if specify_dir.join("roadmap.md").exists() {
+        specs.push(SpecInfo {
+            name: "Roadmap".to_string(),
+            path: specify_dir.join("roadmap.md").to_string_lossy().to_string(),
+            spec_type: "roadmap".to_string(),
+        });
+    }
+    
+    // Add manifest
+    if specify_dir.join("manifest.yaml").exists() {
+        specs.push(SpecInfo {
+            name: "Manifest".to_string(),
+            path: specify_dir.join("manifest.yaml").to_string_lossy().to_string(),
+            spec_type: "manifest".to_string(),
+        });
+    }
 
-        if specify_dir.exists() {
-            // Add constitution
-            if specify_dir.join("constitution.md").exists() {
-                specs.push(SpecInfo {
-                    name: "Constitution".to_string(),
-                    path: ".specify/constitution.md".to_string(),
-                    spec_type: "constitution".to_string(),
-                });
-            }
-
-            // Add features
-            if let Ok(entries) = std::fs::read_dir(specify_dir.join("features")) {
-                for entry in entries.filter_map(|e| e.ok()) {
-                    let path = entry.path();
-                    if path.extension().map(|e| e == "md").unwrap_or(false) {
-                        specs.push(SpecInfo {
-                            name: path
-                                .file_stem()
-                                .map(|s| s.to_string_lossy().to_string())
-                                .unwrap_or_default(),
-                            path: path.to_string_lossy().to_string(),
-                            spec_type: "feature".to_string(),
-                        });
-                    }
+    // Add features
+    let features_dir = specify_dir.join("features");
+    if features_dir.exists() {
+        if let Ok(entries) = std::fs::read_dir(&features_dir) {
+            for entry in entries.filter_map(|e| e.ok()) {
+                let path = entry.path();
+                let ext = path.extension().and_then(|e| e.to_str());
+                if ext == Some("md") || ext == Some("yaml") {
+                    specs.push(SpecInfo {
+                        name: path
+                            .file_stem()
+                            .map(|s| s.to_string_lossy().to_string())
+                            .unwrap_or_default(),
+                        path: path.to_string_lossy().to_string(),
+                        spec_type: "feature".to_string(),
+                    });
                 }
             }
         }
-
-        Ok(specs)
     }
+
+    Ok(specs)
 }
 
 /// Get the content of a specific spec file.
@@ -1608,6 +1641,96 @@ pub async fn get_project_file_content(path: String) -> Result<String, String> {
     
     std::fs::read_to_string(path)
         .map_err(|e| format!("Failed to read file: {}", e))
+}
+
+// =============================================================================
+// Git Operations Commands
+// =============================================================================
+
+/// Check if Git is available on the system.
+#[tauri::command]
+pub async fn git_is_available() -> Result<bool, String> {
+    Ok(mity_core::GitOps::is_git_available())
+}
+
+/// Get Git repository information for a project.
+#[tauri::command]
+pub async fn git_get_repo_info(project_path: String) -> Result<mity_core::GitRepo, String> {
+    let git_ops = mity_core::GitOps::new(&project_path);
+    git_ops.get_repo_info()
+        .map_err(|e| format!("Failed to get repo info: {}", e))
+}
+
+/// Initialize a Git repository for a project.
+#[tauri::command]
+pub async fn git_init(project_path: String) -> Result<(), String> {
+    let git_ops = mity_core::GitOps::new(&project_path);
+    git_ops.init()
+        .map_err(|e| format!("Failed to initialize git: {}", e))
+}
+
+/// Get Git status for a project.
+#[tauri::command]
+pub async fn git_get_status(project_path: String) -> Result<mity_core::GitStatus, String> {
+    let git_ops = mity_core::GitOps::new(&project_path);
+    git_ops.get_status()
+        .map_err(|e| format!("Failed to get status: {}", e))
+}
+
+/// Stage all changes in the repository.
+#[tauri::command]
+pub async fn git_add_all(project_path: String) -> Result<(), String> {
+    let git_ops = mity_core::GitOps::new(&project_path);
+    git_ops.add_all()
+        .map_err(|e| format!("Failed to stage files: {}", e))
+}
+
+/// Commit staged changes.
+#[tauri::command]
+pub async fn git_commit(project_path: String, message: String) -> Result<mity_core::GitCommit, String> {
+    let git_ops = mity_core::GitOps::new(&project_path);
+    git_ops.commit(&message)
+        .map_err(|e| format!("Failed to commit: {}", e))
+}
+
+/// List all remotes for a repository.
+#[tauri::command]
+pub async fn git_list_remotes(project_path: String) -> Result<Vec<mity_core::GitRemote>, String> {
+    let git_ops = mity_core::GitOps::new(&project_path);
+    git_ops.list_remotes()
+        .map_err(|e| format!("Failed to list remotes: {}", e))
+}
+
+/// Add or update a remote.
+#[tauri::command]
+pub async fn git_add_remote(project_path: String, name: String, url: String) -> Result<(), String> {
+    let git_ops = mity_core::GitOps::new(&project_path);
+    git_ops.add_remote(&name, &url)
+        .map_err(|e| format!("Failed to add remote: {}", e))
+}
+
+/// Remove a remote.
+#[tauri::command]
+pub async fn git_remove_remote(project_path: String, name: String) -> Result<(), String> {
+    let git_ops = mity_core::GitOps::new(&project_path);
+    git_ops.remove_remote(&name)
+        .map_err(|e| format!("Failed to remove remote: {}", e))
+}
+
+/// Push to a remote.
+#[tauri::command]
+pub async fn git_push(project_path: String, remote: String, branch: String, force: bool) -> Result<(), String> {
+    let git_ops = mity_core::GitOps::new(&project_path);
+    git_ops.push(&remote, &branch, force)
+        .map_err(|e| format!("Failed to push: {}", e))
+}
+
+/// Pull from a remote.
+#[tauri::command]
+pub async fn git_pull(project_path: String, remote: String, branch: String) -> Result<(), String> {
+    let git_ops = mity_core::GitOps::new(&project_path);
+    git_ops.pull(&remote, &branch)
+        .map_err(|e| format!("Failed to pull: {}", e))
 }
 
 #[cfg(test)]

@@ -201,6 +201,20 @@ templates:
       providers: [terraform]
       clouds: [aws, azure, gcp]
     tags: [java, quarkus, react, typescript, fullstack, cloud-native]
+    
+  - id: fullstack-dotnet-blazor
+    name: .NET Blazor Fullstack
+    description: Enterprise-ready .NET 10 monorepo with Blazor Web App, EF Core, MassTransit, and OpenTelemetry
+    category: fullstack
+    status: production
+    runtime:
+      language: csharp
+      version: "13"
+    iac:
+      enabled: true
+      providers: [terraform]
+      clouds: [aws, azure, gcp]
+    tags: [dotnet, blazor, csharp, efcore, masstransit, opentelemetry, fullstack, monorepo, kubernetes, helm, containerized]
 
 # IaC Provider Configurations
 iac_providers:

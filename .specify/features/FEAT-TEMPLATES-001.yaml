@@ -1,0 +1,93 @@
+id: FEAT-TEMPLATES-001
+title: Template System
+description: |
+  A comprehensive template system for scaffolding new applications across
+  multiple technology stacks. Templates include backend APIs, frontend SPAs,
+  fullstack applications, and desktop apps with optional IaC integration.
+status: implemented
+priority: high
+created: 2026-01-15
+updated: 2026-02-01
+
+acceptance_criteria:
+  - Template manifest defines all available templates
+  - Templates support variable substitution
+  - IaC profiles can be attached to templates
+  - Smoke tests validate template integrity
+  - Templates include Docker/Podman configurations
+  - Production-ready templates pass quality gates
+  - Stub templates provide placeholder structure
+
+available_templates:
+  backend:
+    - id: python-fastapi
+      status: production
+      description: Python FastAPI with uvicorn
+    - id: java-springboot
+      status: production
+      description: Java 21 Spring Boot
+    - id: java-quarkus
+      status: production
+      description: Java 21 Quarkus (cloud-native)
+    - id: dotnet-webapi
+      status: production
+      description: ASP.NET Core 8 Web API
+    - id: rust-api
+      status: stub
+      description: Rust Axum API
+
+  frontend:
+    - id: frontend-angular
+      status: production
+      description: Angular 17+ with TypeScript
+    - id: frontend-vue
+      status: production
+      description: Vue.js 3 with Vite and Pinia
+    - id: frontend-react
+      status: stub
+      description: React 18 with TypeScript
+
+  fullstack:
+    - id: fullstack-springboot-vue
+      status: production
+      description: Spring Boot + Vue.js 3
+    - id: fullstack-springboot-react
+      status: production
+      description: Spring Boot + React 18
+    - id: fullstack-quarkus-vue
+      status: production
+      description: Quarkus + Vue.js 3
+    - id: fullstack-quarkus-react
+      status: production
+      description: Quarkus + React 18
+
+  desktop:
+    - id: electron-app
+      status: stub
+      description: Electron cross-platform desktop
+
+components:
+  - path: crates/mity_templates/src/lib.rs
+    purpose: Template engine core
+  - path: templates/manifest.yaml
+    purpose: Template registry and metadata
+  - path: templates/*/template.yaml
+    purpose: Individual template configurations
+  - path: templates/*/template/
+    purpose: Template source files
+
+iac_support:
+  providers: [terraform]
+  clouds: [aws, azure, gcp]
+  base_modules: iac/terraform/base
+
+dependencies: []
+
+related_adrs:
+  - ADR-0002-container-first.md
+  - ADR-0003-iac-support.md
+
+notes: |
+  Templates marked 'production' are fully functional with tests.
+  Templates marked 'stub' provide structure but need completion.
+  All production templates include Dockerfile and CI configuration.

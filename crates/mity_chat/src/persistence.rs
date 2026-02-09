@@ -462,10 +462,18 @@ impl SessionPersistence {
             if path.is_dir() {
                 if let Some(id) = path.file_name().and_then(|n| n.to_str()) {
                     if let Ok(session) = self.load_session(id) {
+                        // Get app_name from context, or fall back to proposal's app_name
+                        let app_name = session.context.app_name.clone().or_else(|| {
+                            self.load_proposal(id)
+                                .ok()
+                                .flatten()
+                                .map(|p| p.app_name)
+                        });
+                        
                         sessions.push(SessionSummary {
                             id: session.id,
                             context_kind: session.context.kind,
-                            app_name: session.context.app_name,
+                            app_name,
                             state: session.state,
                             created_at: session.created_at,
                             updated_at: session.updated_at,

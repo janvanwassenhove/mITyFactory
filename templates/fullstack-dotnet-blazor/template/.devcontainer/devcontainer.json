@@ -1,0 +1,59 @@
+{
+  "name": "{{project_name}} Dev Container",
+  "image": "mcr.microsoft.com/devcontainers/dotnet:10.0",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers-contrib/features/terraform-asdf:2": {},
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+      "version": "latest",
+      "helm": "latest"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.blazorwasm-companion",
+        "EditorConfig.EditorConfig",
+        "redhat.vscode-yaml",
+        "hashicorp.terraform",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "humao.rest-client"
+      ],
+      "settings": {
+        "dotnet.defaultSolution": "{{project_name}}.sln",
+        "omnisharp.enableRoslynAnalyzers": true,
+        "omnisharp.enableEditorConfigSupport": true
+      }
+    }
+  },
+  "postCreateCommand": "dotnet restore && dotnet tool restore",
+  "forwardPorts": [5000, 5001, 5432, 5672, 15672, 5341, 16686],
+  "portsAttributes": {
+    "5000": {
+      "label": "Blazor Web App",
+      "onAutoForward": "notify"
+    },
+    "5001": {
+      "label": "API",
+      "onAutoForward": "notify"
+    },
+    "5432": {
+      "label": "PostgreSQL"
+    },
+    "5672": {
+      "label": "RabbitMQ AMQP"
+    },
+    "15672": {
+      "label": "RabbitMQ Management"
+    },
+    "5341": {
+      "label": "Seq Logging"
+    },
+    "16686": {
+      "label": "Jaeger Tracing"
+    }
+  },
+  "remoteUser": "vscode"
+}

@@ -3,36 +3,76 @@ title: Spec Kit Foundation
 description: |
   The foundational specification system that governs mITyFactory development.
   Includes constitution, principles, testing requirements, and feature specifications.
-  Provides the framework for specification-driven development.
+  Provides the framework for specification-driven development with agent integration.
 status: implemented
 priority: critical
 created: 2026-01-15
-updated: 2026-01-21
+updated: 2026-02-01
 
 acceptance_criteria:
-  - Constitution defines core tenets and governance
-  - Principles guide design decisions
+  - Constitution defines core tenets (8 tenets) and governance
+  - Principles guide design decisions (11 principles)
   - Testing requirements define coverage targets
   - Feature specs follow standardized YAML schema
   - Glossary provides terminology definitions
-  - Roadmap tracks planned features
+  - Roadmap tracks planned features and version history
   - Governance document explains maintenance procedures
+  - CI validates spec kit presence and YAML validity
+  - GitHub Copilot instructions reference specs
+  - Agents are spec-kit aware during processing
+  - Agent outputs reference applicable tenets and principles
 
 components:
   - path: .specify/constitution.md
-    purpose: Inviolable project rules
+    purpose: Inviolable project rules (8 core tenets)
   - path: .specify/principles.md
-    purpose: Design guidance
+    purpose: Design guidance (11 principles)
   - path: .specify/testing-requirements.md
-    purpose: Testing standards
+    purpose: Testing standards and coverage targets
   - path: .specify/glossary.md
     purpose: Terminology definitions
   - path: .specify/roadmap.md
-    purpose: Future plans
+    purpose: Version history and future plans
   - path: .specify/GOVERNANCE.md
-    purpose: Maintenance procedures
+    purpose: Maintenance procedures and change process
   - path: .specify/features/
-    purpose: Feature specifications
+    purpose: Feature specifications (YAML)
+  - path: .github/copilot-instructions.md
+    purpose: AI assistant guidance referencing specs
+  - path: .github/workflows/spec-validation.yaml
+    purpose: CI validation of spec kit
+  - path: crates/mity_agents/src/speckit.rs
+    purpose: Agent spec-kit awareness module
+
+agent_integration:
+  SpecKitContext:
+    purpose: Load and parse spec kit documents for agents
+    capabilities:
+      - Parse constitution tenets
+      - Parse design principles
+      - Parse testing requirements
+      - Load glossary terms
+      - Load existing feature specs
+      - Validate actions against constitution
+  SpecKitGuidance:
+    purpose: Serializable guidance for agent context
+    contents:
+      - Tenet summaries with requirements
+      - Principle summaries with implications
+      - Testing requirements (coverage targets, a11y)
+      - Definition of done checklist
+      - Glossary terms
+  Functions:
+    - create_spec_aware_context(workspace) - Creates agent context with guidance
+    - has_spec_kit(workspace) - Check if spec kit exists
+
+enforcement:
+  - GitHub Copilot instructions auto-loaded for AI suggestions
+  - spec-validation.yaml workflow validates on PR
+  - Constitution compliance checked in CI
+  - Code review checklist in GOVERNANCE.md
+  - ReviewerAgent validates against Definition of Done
+  - ArchitectAgent references principles in ADR context
 
 dependencies: []
 
@@ -43,3 +83,10 @@ notes: |
   The Spec Kit is the foundation of specification-driven development in mITyFactory.
   All new features should have corresponding feature specs before implementation.
   The constitution can only be amended through the ADR process.
+  SpecKit::init() now creates all 6 required files automatically.
+  
+  Agent Integration (v0.3.0):
+  - Agents receive spec-kit guidance via AgentContext.spec_kit_guidance
+  - ReviewerAgent checks definition of done and testing requirements
+  - ArchitectAgent includes principles in ADR context
+  - Use create_spec_aware_context() to initialize spec-aware workflows

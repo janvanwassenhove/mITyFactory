@@ -37,4 +37,7 @@ pub enum CoreError {
 
     #[error("Serialization error: {0}")]
     Serialization(String),
+
+    #[error("Git error: {0}")]
+    GitError(String),
 }

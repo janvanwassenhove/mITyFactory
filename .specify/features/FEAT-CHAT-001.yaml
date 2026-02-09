@@ -1,0 +1,60 @@
+id: FEAT-CHAT-001
+title: Agent Chat System
+description: |
+  Interactive chat system for conversational application development.
+  Enables users to describe features in natural language and have agents
+  process them through the SDLC workflow. Supports multiple LLM providers
+  (OpenAI, Anthropic) with streaming responses and autopilot mode for
+  autonomous factory execution.
+status: implemented
+priority: high
+created: 2026-01-20
+updated: 2026-02-01
+
+acceptance_criteria:
+  - Chat sessions persist across restarts
+  - Streaming responses display in real-time
+  - Multiple LLM providers supported (OpenAI, Anthropic)
+  - Conversation history maintained per session
+  - Agent context includes workspace and spec information
+  - Error handling with user-friendly messages
+  - Token usage tracking and cost awareness
+  - Autopilot mode for autonomous execution
+  - User interrupt capability during autopilot
+  - Guided intake for new application creation
+  - Works without LLM key (deterministic fallback)
+
+components:
+  - path: crates/mity_chat/src/lib.rs
+    purpose: Core chat module exports
+  - path: crates/mity_chat/src/types.rs
+    purpose: Chat message and session types
+  - path: crates/mity_chat/src/runtime.rs
+    purpose: Runtime state with timeline and cost tracking
+  - path: crates/mity_chat/src/session.rs
+    purpose: Chat session state management
+  - path: crates/mity_chat/src/persistence.rs
+    purpose: Session persistence to filesystem
+  - path: crates/mity_chat/src/agents.rs
+    purpose: Agent router and selection logic
+  - path: crates/mity_chat/src/llm.rs
+    purpose: LLM provider abstraction (OpenAI, Anthropic)
+  - path: crates/mity_chat/src/intake.rs
+    purpose: Guided intake flow for new apps
+  - path: crates/mity_chat/src/autopilot.rs
+    purpose: Autonomous pipeline execution
+  - path: crates/mity_chat/src/cost.rs
+    purpose: Token usage and cost tracking
+
+dependencies:
+  - FEAT-SPEC-KIT-001
+
+related_adrs:
+  - ADR-0004-agent-chat-system.md
+  - ADR-0006-cost-aware-agentic-factory.md
+
+notes: |
+  The chat system implements the architecture defined in ADR-0004.
+  Cost tracking per ADR-0006 provides visibility into LLM expenses.
+  The system degrades gracefully without LLM keys, using deterministic
+  agent responses for core functionality.

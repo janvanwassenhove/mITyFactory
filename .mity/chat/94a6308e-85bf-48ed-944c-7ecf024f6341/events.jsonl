@@ -1,0 +1,63 @@
+{"id":"1d2d892b-412f-4a33-8f8b-90662fe18f8b","ts":"2026-02-04T14:15:44.710421900Z","type":"info","actor":"user","message":"User request: create a wine application"}
+{"id":"31d8063a-3a13-4364-8058-56a44b50124f","ts":"2026-02-04T14:15:44.711290200Z","type":"info","actor":"factory","message":"Factory autopilot started"}
+{"id":"f0cbce6d-c895-4fce-bacb-45c8fa05d171","ts":"2026-02-04T14:15:44.711759300Z","type":"station-start","actor":"analyst","message":"Starting: Gather Requirements","station":"intake"}
+{"id":"5e659aad-21bc-4681-917c-0039de173350","ts":"2026-02-04T14:15:44.712466400Z","type":"station-done","actor":"analyst","message":"Completed: Gather Requirements","station":"intake"}
+{"id":"2248c049-3501-42a9-bd8f-93c061d53a20","ts":"2026-02-04T14:15:44.723874800Z","type":"station-start","actor":"analyst","message":"Starting: Analyze & Clarify","station":"analyze"}
+{"id":"943e0adb-73ce-4f21-9c31-86ddb88b0917","ts":"2026-02-04T14:15:44.732272800Z","type":"question","actor":"factory","message":"Which template would you like to use?","metadata":{"questionId":"confirm-template"}}
+{"id":"0c1810b6-9e42-400f-ad78-e7dd772d608b","ts":"2026-02-04T14:16:03.705262Z","type":"decision","actor":"user","message":"Decided: java-quarkus","metadata":{"questionId":"confirm-template"}}
+{"id":"25022405-a65a-4aab-8ffc-c9c56d3037b2","ts":"2026-02-04T14:16:03.707187600Z","type":"info","actor":"factory","message":"Factory autopilot resumed"}
+{"id":"b1ba632d-9cd8-4a31-8c2f-65885f45ba60","ts":"2026-02-04T14:16:03.708145100Z","type":"station-start","actor":"analyst","message":"Starting: Analyze & Clarify","station":"analyze"}
+{"id":"7a2adb7f-6f92-4e34-bd0e-d00500007d20","ts":"2026-02-04T14:16:03.708657900Z","type":"station-done","actor":"analyst","message":"Completed: Analyze & Clarify","station":"analyze"}
+{"id":"30a9f599-5d5e-4993-9114-1880ab4cd814","ts":"2026-02-04T14:16:03.709124600Z","type":"station-start","actor":"architect","message":"Starting: Design Architecture","station":"architect"}
+{"id":"d2cc2334-e868-46b3-af5f-d8b3ce307091","ts":"2026-02-04T14:16:03.709641400Z","type":"info","actor":"architect","message":"📐 Creating architecture documentation structure..."}
+{"id":"5addadcc-22eb-4c55-a029-192416c3a5e2","ts":"2026-02-04T14:16:03.726334700Z","type":"info","actor":"architect","message":"📝 Architecture documentation created. You can customize it in docs/architecture/"}
+{"id":"faf9f7dc-202f-46a2-9db4-ef71f9e63a34","ts":"2026-02-04T14:16:03.726707Z","type":"station-done","actor":"architect","message":"Completed: Design Architecture","station":"architect"}
+{"id":"6f4dbc43-37c2-49ca-afc1-19e70e4ce238","ts":"2026-02-04T14:16:03.727332300Z","type":"station-start","actor":"implementer","message":"Starting: Generate Scaffold","station":"scaffold"}
+{"id":"41414bb5-7ed3-41a5-8ff6-36f6d967d7b8","ts":"2026-02-04T14:16:03.779551800Z","type":"station-done","actor":"implementer","message":"Completed: Generate Scaffold","station":"scaffold"}
+{"id":"6bfeefcf-2bf1-4ca0-85aa-b2d776c4f854","ts":"2026-02-04T14:16:03.780254800Z","type":"station-start","actor":"implementer","message":"Starting: Implement Code","station":"implement"}
+{"id":"8c20a039-ac39-4676-b2ed-e5e17d227fa8","ts":"2026-02-04T14:16:03.781057200Z","type":"info","actor":"implementer","message":"🔧 Implementer: Analyzing requirements to generate features..."}
+{"id":"6958d769-841d-4ccb-83af-8fe7b33c79fc","ts":"2026-02-04T14:16:03.781331100Z","type":"info","actor":"implementer","message":"🤖 Calling LLM to generate feature code..."}
+{"id":"cf76f1ea-18b1-4783-8703-15cdcafe61dd","ts":"2026-02-04T14:16:58.852164600Z","type":"info","actor":"implementer","message":"✨ LLM generated implementation plan (4405 tokens used)"}
+{"id":"ad09326a-7877-4a87-9018-05a4b80cc60b","ts":"2026-02-04T14:16:58.852511800Z","type":"station-done","actor":"implementer","message":"Completed: Implement Code","station":"implement"}
+{"id":"3edda5b3-e1e1-465b-9e76-55d01d1f5238","ts":"2026-02-04T14:16:58.853323600Z","type":"station-start","actor":"tester","message":"Starting: Write Tests","station":"test"}
+{"id":"21397386-8a40-4a88-a4d8-73216ef9b10e","ts":"2026-02-04T14:16:58.854229300Z","type":"station-done","actor":"tester","message":"Completed: Write Tests","station":"test"}
+{"id":"355f7af2-6c63-4ab0-81d6-6205787b404f","ts":"2026-02-04T14:16:58.854976600Z","type":"station-start","actor":"reviewer","message":"Starting: Code Review","station":"review"}
+{"id":"8e35675a-bd12-4975-b8de-b59b50c9c9fc","ts":"2026-02-04T14:16:58.855722900Z","type":"station-done","actor":"reviewer","message":"Completed: Code Review","station":"review"}
+{"id":"16d38ba0-b38a-4b87-8ffd-c2ee6e006e29","ts":"2026-02-04T14:16:58.856526700Z","type":"station-start","actor":"security","message":"Starting: Security Scan","station":"secure"}
+{"id":"79a605e9-c137-4774-b262-c170ac8205fc","ts":"2026-02-04T14:16:58.857206700Z","type":"station-done","actor":"security","message":"Completed: Security Scan","station":"secure"}
+{"id":"6aa20eeb-169f-4cfb-a764-bdbece6af978","ts":"2026-02-04T14:16:58.858172300Z","type":"station-start","actor":"devops","message":"Starting: Validate IaC","station":"iac-validate"}
+{"id":"8577c4e4-119d-460b-ba12-85487c8e2baf","ts":"2026-02-04T14:16:58.859134900Z","type":"station-done","actor":"devops","message":"Completed: Validate IaC","station":"iac-validate"}
+{"id":"fa0b687e-8f3c-4280-bf44-70e6acd84174","ts":"2026-02-04T14:16:58.859632300Z","type":"station-start","actor":"reviewer","message":"Starting: Quality Gate","station":"gate"}
+{"id":"e9c23632-40d6-4b40-b475-52f46b4f993e","ts":"2026-02-04T14:16:58.860519500Z","type":"station-done","actor":"reviewer","message":"Completed: Quality Gate","station":"gate"}
+{"id":"4e696159-0420-42e4-9c59-a25562b3e3ab","ts":"2026-02-04T14:16:58.861014600Z","type":"station-start","actor":"tester","message":"Starting: Build & Test","station":"build-test"}
+{"id":"e932660f-def8-4617-80c9-cd97893cb6f6","ts":"2026-02-04T14:16:58.862583400Z","type":"info","actor":"tester","message":"🔨 Starting build with self-healing enabled..."}
+{"id":"c377b54f-42e4-4bbd-a449-0085d56dd68e","ts":"2026-02-04T14:16:58.862903Z","type":"terminal-start","actor":"tester","message":"$ mvnw.cmd compile -DskipTests","metadata":{"workingDir":"C:\\devenv\\workspaces\\mityfactory\\workspaces\\wine","command":"mvnw.cmd compile -DskipTests"}}
+{"id":"eef8d49a-d4ee-43f1-88de-f9ff1472623c","ts":"2026-02-04T14:17:00.532143100Z","type":"terminal-output","actor":"tester","message":"no main manifest attribute, in .mvn\\wrapper\\maven-wrapper.jar","metadata":{"isStderr":true}}
+{"id":"33810b4c-0c0a-4fe3-9427-f4ee8f9c4068","ts":"2026-02-04T14:17:00.575013600Z","type":"terminal-end","actor":"tester","message":"✓ Command completed successfully","metadata":{"exitCode":0,"success":true}}
+{"id":"3856942d-639b-43be-be7b-c98a65aaf8c1","ts":"2026-02-04T14:17:00.575569300Z","type":"info","actor":"tester","message":"✓ Build succeeded!"}
+{"id":"eaac1988-835b-49c1-afd0-e4f9a5dd3676","ts":"2026-02-04T14:17:00.575914Z","type":"info","actor":"tester","message":"🧪 Starting tests with self-healing enabled..."}
+{"id":"64f5bf57-1d19-41d3-b6e9-c240e074d07a","ts":"2026-02-04T14:17:00.576263700Z","type":"terminal-start","actor":"tester","message":"$ mvnw.cmd test","metadata":{"command":"mvnw.cmd test","workingDir":"C:\\devenv\\workspaces\\mityfactory\\workspaces\\wine"}}
+{"id":"c5730d39-eec0-4549-b055-922520882386","ts":"2026-02-04T14:17:00.797836100Z","type":"terminal-output","actor":"tester","message":"no main manifest attribute, in .mvn\\wrapper\\maven-wrapper.jar","metadata":{"isStderr":true}}
+{"id":"cdd5cd09-acd5-41fe-af52-cf7ab38229ba","ts":"2026-02-04T14:17:00.836572500Z","type":"terminal-end","actor":"tester","message":"✓ Command completed successfully","metadata":{"exitCode":0,"success":true}}
+{"id":"af970ec9-cacf-4e9a-b92a-ca42c46d33a2","ts":"2026-02-04T14:17:00.837087800Z","type":"info","actor":"tester","message":"✓ All tests passed!"}
+{"id":"0a44f2ff-71f6-4a61-b09c-2ff09f9a93e3","ts":"2026-02-04T14:17:00.837435600Z","type":"info","actor":"tester","message":"🎉 Build and tests completed successfully!"}
+{"id":"ca553be1-fc85-4621-9a4e-dd3e2724dbc1","ts":"2026-02-04T14:17:00.837825100Z","type":"station-done","actor":"tester","message":"Completed: Build & Test","station":"build-test"}
+{"id":"da891758-264e-41da-bdf5-cf9604545e8c","ts":"2026-02-04T14:17:00.838656600Z","type":"station-start","actor":"devops","message":"Starting: Launch Application","station":"launch"}
+{"id":"ff9ab4e9-16ad-4853-9d35-7c3eea048304","ts":"2026-02-04T14:17:00.841152800Z","type":"info","actor":"devops","message":"🔧 DevOps: Pre-launch port cleanup (8080, 8000, 3000, 5173)..."}
+{"id":"5f8be074-98cc-4593-8beb-3a8eedcf7f40","ts":"2026-02-04T14:17:07.012019700Z","type":"terminal-start","actor":"devops","message":"$ mvnw.cmd spring-boot:run","metadata":{"command":"mvnw.cmd spring-boot:run","workingDir":"C:\\devenv\\workspaces\\mityfactory\\workspaces\\wine"}}
+{"id":"048bb615-89c3-4091-925f-c5ebda6170c1","ts":"2026-02-04T14:17:07.036738900Z","type":"info","actor":"devops","message":"⏳ Process started (PID: 28968), waiting for application..."}
+{"id":"5cfd09cb-1bda-4cfd-a438-490c7302707e","ts":"2026-02-04T14:17:07.236058Z","type":"terminal-output","actor":"devops","message":"no main manifest attribute, in .mvn\\wrapper\\maven-wrapper.jar","metadata":{"isStderr":true}}
+{"id":"b884d982-c48d-4940-87b0-de83d268d41f","ts":"2026-02-04T14:17:09.559730400Z","type":"terminal-end","actor":"devops","message":"✓ Command completed successfully","metadata":{"success":true,"exitCode":0}}
+{"id":"a841104a-1b3f-42bd-93df-249dbc09cf2e","ts":"2026-02-04T14:17:09.560779200Z","type":"warning","actor":"devops","message":"⚠️ Application process ended without becoming ready"}
+{"id":"0a204c94-5c3a-4e2e-a019-7f6e2fbdcc28","ts":"2026-02-04T14:17:11.562981900Z","type":"info","actor":"factory","message":"🔄 Healing iteration 2 (max: 10)..."}
+{"id":"1534b93a-59ca-4aa2-aade-f742744864f9","ts":"2026-02-04T14:17:11.564244900Z","type":"terminal-start","actor":"devops","message":"$ mvnw.cmd spring-boot:run","metadata":{"workingDir":"C:\\devenv\\workspaces\\mityfactory\\workspaces\\wine","command":"mvnw.cmd spring-boot:run"}}
+{"id":"285a1708-f290-4961-bb88-3529331047c2","ts":"2026-02-04T14:17:11.581981700Z","type":"info","actor":"devops","message":"⏳ Process started (PID: 36476), waiting for application..."}
+{"id":"20e406bb-9322-4a82-9bc5-571a7801d921","ts":"2026-02-04T14:17:11.773519300Z","type":"terminal-output","actor":"devops","message":"no main manifest attribute, in .mvn\\wrapper\\maven-wrapper.jar","metadata":{"isStderr":true}}
+{"id":"f317a578-1a3b-49b6-90cf-2ee931377dcf","ts":"2026-02-04T14:17:14.110616800Z","type":"terminal-end","actor":"devops","message":"✓ Command completed successfully","metadata":{"exitCode":0,"success":true}}
+{"id":"1ab17a0a-e859-4794-9261-7c01b8377b30","ts":"2026-02-04T14:17:14.111880900Z","type":"warning","actor":"devops","message":"⚠️ Application process ended without becoming ready"}
+{"id":"21f3744f-9f7f-4169-91e9-c3333445952e","ts":"2026-02-04T14:17:16.127448800Z","type":"warning","actor":"factory","message":"⚠️ Self-healing limit reached: Failed 2 times in a row without progress"}
+{"id":"864605ad-2249-4a23-82b6-e23851c83e92","ts":"2026-02-04T14:17:16.128974600Z","type":"info","actor":"factory","message":"💡 Please describe the error or try \"fix it\" with more details."}
+{"id":"bd891d6c-f41f-4263-b264-c7e0013dde84","ts":"2026-02-04T14:17:16.129852Z","type":"station-done","actor":"devops","message":"Completed: Launch Application","station":"launch"}
+{"id":"8d63b3e0-55f5-4773-9bb4-92139a577602","ts":"2026-02-04T14:17:16.131283600Z","type":"station-start","actor":"analyst","message":"Starting: Complete","station":"done"}
+{"id":"c1bf0be1-6936-41ea-a785-8a0804044c02","ts":"2026-02-04T14:17:16.132699100Z","type":"station-done","actor":"analyst","message":"Completed: Complete","station":"done"}
+{"id":"0a273c3b-6953-4697-83e4-dfb1dfec948f","ts":"2026-02-04T14:17:16.135272700Z","type":"info","actor":"factory","message":"🎉 Application generated and ready to test!"}

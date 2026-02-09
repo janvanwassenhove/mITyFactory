@@ -1,0 +1,116 @@
+{
+  "sessionId": "e15c9372-db17-47a0-b15c-0bbb7e5a5a85",
+  "currency": "USD",
+  "sessionCost": {
+    "currency": "USD",
+    "scope": "session",
+    "confidence": 0.5,
+    "breakdown": {
+      "llm": {
+        "min": 0.0057732,
+        "expected": 0.0057732,
+        "max": 0.0057732
+      },
+      "compute": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      },
+      "storage": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      },
+      "network": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      },
+      "misc": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      }
+    },
+    "total": {
+      "min": 0.0057732,
+      "expected": 0.0057732,
+      "max": 0.0057732
+    },
+    "assumptions": [
+      "Using conservative LLM pricing estimates",
+      "Local execution costs are indicative only"
+    ],
+    "updatedAt": "2026-02-05T15:37:20.183996700Z",
+    "isMonthly": false
+  },
+  "infraCost": {
+    "currency": "USD",
+    "scope": "app",
+    "confidence": 0.3,
+    "breakdown": {
+      "llm": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      },
+      "compute": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      },
+      "storage": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      },
+      "network": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      },
+      "misc": {
+        "min": 0.0,
+        "expected": 0.0,
+        "max": 0.0
+      }
+    },
+    "total": {
+      "min": 0.0,
+      "expected": 0.0,
+      "max": 0.0
+    },
+    "assumptions": [
+      "Single-region deployment",
+      "Low traffic assumed",
+      "No high availability",
+      "Minimum resource allocation"
+    ],
+    "updatedAt": "2026-02-05T15:36:18.802075400Z",
+    "isMonthly": true
+  },
+  "llmUsage": [
+    {
+      "id": "3a7cf04d-691c-4bec-a6b7-bc8bd71bfffe",
+      "model": "gpt5mini",
+      "inputTokens": 370,
+      "outputTokens": 540,
+      "cost": 0.000759,
+      "agent": "Analyst",
+      "timestamp": "2026-02-05T15:36:18.801853600Z"
+    },
+    {
+      "id": "1f1e95ff-0c39-4b17-ab52-f6dc2d636127",
+      "model": "gpt5mini",
+      "inputTokens": 330,
+      "outputTokens": 4096,
+      "cost": 0.0050142,
+      "agent": "Implementer",
+      "timestamp": "2026-02-05T15:37:20.183479100Z"
+    }
+  ],
+  "executionCosts": [],
+  "featureCosts": {},
+  "confirmationThreshold": 5.0,
+  "updatedAt": "2026-02-05T15:37:20.183996900Z"
+}

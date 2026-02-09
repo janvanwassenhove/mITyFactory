@@ -469,6 +469,174 @@ impl ReviewerAgent {
 
         report
     }
+
+    /// Generate report with spec kit guidance context.
+    pub fn generate_report_with_guidance(
+        &self,
+        findings: &[ReviewFinding],
+        context: &crate::traits::AgentContext,
+    ) -> String {
+        let mut report = self.generate_report(findings);
+
+        // Add spec kit governance section if available
+        if let Some(ref guidance) = context.spec_kit_guidance {
+            report.push_str("## Spec Kit Governance\n\n");
+            report.push_str("Review performed with awareness of project specifications:\n\n");
+
+            // List applicable tenets
+            if !guidance.tenets.is_empty() {
+                report.push_str("### Constitution Tenets Applied\n\n");
+                for tenet in &guidance.tenets {
+                    report.push_str(&format!("- **Tenet {}**: {}\n", tenet.number, tenet.name));
+                }
+                report.push_str("\n");
+            }
+
+            // List testing requirements
+            report.push_str("### Testing Requirements\n\n");
+            report.push_str(&format!(
+                "- Core logic coverage target: {}%\n",
+                guidance.testing_requirements.core_coverage_target
+            ));
+            report.push_str(&format!(
+                "- API coverage target: {}%\n",
+                guidance.testing_requirements.api_coverage_target
+            ));
+            if guidance.testing_requirements.requires_a11y_tests {
+                report.push_str("- ✅ Accessibility tests required\n");
+            }
+            if guidance.testing_requirements.requires_integration_tests {
+                report.push_str("- ✅ Integration tests required\n");
+            }
+            report.push_str("\n");
+
+            // Definition of Done checklist
+            if !guidance.definition_of_done.is_empty() {
+                report.push_str("### Definition of Done Checklist\n\n");
+                for item in &guidance.definition_of_done {
+                    report.push_str(&format!("- [ ] {}\n", item));
+                }
+                report.push_str("\n");
+            }
+        }
+
+        report
+    }
+
+    /// Check project against definition of done from spec kit.
+    fn check_definition_of_done(
+        &self,
+        input: &AgentInput,
+        guidance: &crate::traits::SpecKitGuidance,
+    ) -> Vec<ReviewFinding> {
+        let mut findings = Vec::new();
+
+        // Check for test files if testing is mentioned in DoD
+        let has_test_requirement = guidance
+            .definition_of_done
+            .iter()
+            .any(|item| item.to_lowercase().contains("test"));
+
+        if has_test_requirement {
+            // Look for test files
+            let test_files_exist = self.find_test_files(&input.workspace);
+            if !test_files_exist {
+                findings.push(ReviewFinding {
+                    severity: FindingSeverity::Warning,
+                    category: FindingCategory::Documentation,
+                    file: input.workspace.clone(),
+                    line: None,
+                    message: "Definition of Done requires tests but no test files found".to_string(),
+                    suggestion: Some("Add test files per spec kit testing requirements".to_string()),
+                });
+            }
+        }
+
+        // Check for a11y tests if required
+        if guidance.testing_requirements.requires_a11y_tests {
+            let has_a11y_tests = self.find_a11y_tests(&input.workspace);
+            if !has_a11y_tests {
+                findings.push(ReviewFinding {
+                    severity: FindingSeverity::Info,
+                    category: FindingCategory::Documentation,
+                    file: input.workspace.clone(),
+                    line: None,
+                    message: "Spec Kit requires accessibility tests".to_string(),
+                    suggestion: Some("Add WCAG compliance tests per constitution tenet 6".to_string()),
+                });
+            }
+        }
+
+        findings
+    }
+
+    /// Check if test files exist in workspace.
+    fn find_test_files(&self, workspace: &Path) -> bool {
+        // Look for common test file patterns
+        if let Ok(entries) = std::fs::read_dir(workspace) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                let name = path.file_name().map(|n| n.to_string_lossy().to_string());
+                
+                if let Some(name) = name {
+                    // Check for test directories
+                    if path.is_dir() && ["tests", "test", "__tests__", "spec"].contains(&name.as_str()) {
+                        return true;
+                    }
+                    // Check for test files
+                    if name.ends_with("_test.rs")
+                        || name.ends_with("_test.py")
+                        || name.ends_with(".test.ts")
+                        || name.ends_with(".test.js")
+                        || name.ends_with("_spec.rb")
+                    {
+                        return true;
+                    }
+                    // Recurse into src directory
+                    if path.is_dir() && name == "src" {
+                        if self.find_test_files(&path) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        false
+    }
+
+    /// Check if a11y tests exist in workspace.
+    fn find_a11y_tests(&self, workspace: &Path) -> bool {
+        // Simple check - look for a11y-related test patterns
+        let test_patterns = ["a11y", "accessibility", "wcag", "axe"];
+        
+        fn check_dir(dir: &Path, patterns: &[&str]) -> bool {
+            if let Ok(entries) = std::fs::read_dir(dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    let name_lower = path
+                        .file_name()
+                        .map(|n| n.to_string_lossy().to_lowercase())
+                        .unwrap_or_default();
+
+                    if patterns.iter().any(|p| name_lower.contains(p)) {
+                        return true;
+                    }
+
+                    if path.is_dir()
+                        && !name_lower.starts_with('.')
+                        && !["node_modules", "target", "__pycache__"].contains(&name_lower.as_str())
+                    {
+                        if check_dir(&path, patterns) {
+                            return true;
+                        }
+                    }
+                }
+            }
+            false
+        }
+
+        check_dir(workspace, &test_patterns)
+    }
 }
 
 impl Default for ReviewerAgent {
@@ -503,10 +671,24 @@ impl AgentHandler for ReviewerAgent {
         self.validate_input(input)?;
 
         // Perform review
-        let findings = self.review_files(&input.workspace);
+        let mut findings = self.review_files(&input.workspace);
+
+        // If spec kit guidance is available, add spec-aware checks
+        if let Some(ref guidance) = input.context.spec_kit_guidance {
+            // Check against definition of done
+            let dod_issues = self.check_definition_of_done(input, guidance);
+            findings.extend(dod_issues);
+
+            // Log that we're using spec-kit guidance
+            info!(
+                "Reviewer applying {} tenets, {} principles from Spec Kit",
+                guidance.tenets.len(),
+                guidance.principles.len()
+            );
+        }
 
         // Generate report
-        let report = self.generate_report(&findings);
+        let report = self.generate_report_with_guidance(&findings, &input.context);
         let report_path = input.workspace.join(".mity/review-report.md");
 
         // Count by severity
@@ -536,6 +718,7 @@ impl AgentHandler for ReviewerAgent {
             .with_data("error_count", &errors)
             .with_data("warning_count", &warnings)
             .with_data("total_findings", &findings.len())
+            .with_data("spec_kit_aware", &input.context.has_spec_kit())
             .with_duration(start.elapsed().as_millis() as u64);
 
         // Add issues to output

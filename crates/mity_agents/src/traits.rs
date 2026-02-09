@@ -82,6 +82,49 @@ pub struct AgentContext {
     pub shared: HashMap<String, serde_json::Value>,
     /// List of artifacts created so far
     pub artifacts: Vec<Artifact>,
+    /// Spec Kit guidance (serialized from SpecKitContext)
+    #[serde(default)]
+    pub spec_kit_guidance: Option<SpecKitGuidance>,
+}
+
+/// Serializable spec kit guidance for agent context.
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct SpecKitGuidance {
+    /// Constitution tenets as name -> description
+    pub tenets: Vec<TenetSummary>,
+    /// Design principles relevant to this workflow
+    pub principles: Vec<PrincipleSummary>,
+    /// Testing requirements for this workflow
+    pub testing_requirements: TestingGuidance,
+    /// Definition of done checklist
+    pub definition_of_done: Vec<String>,
+    /// Glossary terms (lowercase key -> definition)
+    pub glossary: HashMap<String, String>,
+}
+
+/// Summarized tenet for context
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TenetSummary {
+    pub number: u8,
+    pub name: String,
+    pub requirements: Vec<String>,
+}
+
+/// Summarized principle for context
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PrincipleSummary {
+    pub id: String,
+    pub name: String,
+    pub implications: Vec<String>,
+}
+
+/// Testing guidance for context
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct TestingGuidance {
+    pub core_coverage_target: u8,
+    pub api_coverage_target: u8,
+    pub requires_integration_tests: bool,
+    pub requires_a11y_tests: bool,
 }
 
 impl AgentContext {
@@ -110,6 +153,41 @@ impl AgentContext {
     /// Add an artifact.
     pub fn add_artifact(&mut self, artifact: Artifact) {
         self.artifacts.push(artifact);
+    }
+
+    /// Set spec kit guidance.
+    pub fn with_spec_kit_guidance(mut self, guidance: SpecKitGuidance) -> Self {
+        self.spec_kit_guidance = Some(guidance);
+        self
+    }
+
+    /// Check if spec kit guidance is available.
+    pub fn has_spec_kit(&self) -> bool {
+        self.spec_kit_guidance.is_some()
+    }
+
+    /// Get tenet by number.
+    pub fn get_tenet(&self, number: u8) -> Option<&TenetSummary> {
+        self.spec_kit_guidance
+            .as_ref()
+            .and_then(|g| g.tenets.iter().find(|t| t.number == number))
+    }
+
+    /// Get testing guidance.
+    pub fn get_testing_guidance(&self) -> Option<&TestingGuidance> {
+        self.spec_kit_guidance.as_ref().map(|g| &g.testing_requirements)
+    }
+
+    /// Get definition of done.
+    pub fn get_definition_of_done(&self) -> Option<&[String]> {
+        self.spec_kit_guidance.as_ref().map(|g| g.definition_of_done.as_slice())
+    }
+
+    /// Lookup glossary term.
+    pub fn lookup_term(&self, term: &str) -> Option<&String> {
+        self.spec_kit_guidance
+            .as_ref()
+            .and_then(|g| g.glossary.get(&term.to_lowercase()))
     }
 }
 

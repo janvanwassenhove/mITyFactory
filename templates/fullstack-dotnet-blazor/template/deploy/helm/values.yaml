@@ -1,0 +1,136 @@
+# Default values for {{project_name}}
+# This is a YAML-formatted file.
+
+# Global settings
+global:
+  imageRegistry: ""
+  imagePullSecrets: []
+
+# Web application settings
+web:
+  replicaCount: 2
+  
+  image:
+    repository: {{project_name}}-web
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 5000
+  
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    hosts:
+      - host: {{project_name}}.local
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+  
+  env:
+    - name: ASPNETCORE_ENVIRONMENT
+      value: Production
+    - name: Api__BaseUrl
+      value: http://{{project_name}}-api:5001
+
+# API application settings
+api:
+  replicaCount: 2
+  
+  image:
+    repository: {{project_name}}-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  
+  service:
+    type: ClusterIP
+    port: 5001
+  
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 200m
+      memory: 256Mi
+  
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+  
+  env:
+    - name: ASPNETCORE_ENVIRONMENT
+      value: Production
+
+# PostgreSQL settings
+postgresql:
+  enabled: true
+  auth:
+    database: {{project_name}}
+    username: postgres
+    existingSecret: {{project_name}}-db-secret
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+
+# RabbitMQ settings
+rabbitmq:
+  enabled: true
+  auth:
+    username: guest
+    existingPasswordSecret: {{project_name}}-rabbitmq-secret
+  persistence:
+    enabled: true
+    size: 5Gi
+
+# Service account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+# Pod annotations
+podAnnotations: {}
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 1000
+
+# Security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+
+# Node selector
+nodeSelector: {}
+
+# Tolerations
+tolerations: []
+
+# Affinity
+affinity: {}

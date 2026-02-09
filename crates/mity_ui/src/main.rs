@@ -72,6 +72,18 @@ fn main() {
             // Project file browser commands
             commands::list_project_files,
             commands::get_project_file_content,
+            // Git operations commands
+            commands::git_is_available,
+            commands::git_get_repo_info,
+            commands::git_init,
+            commands::git_get_status,
+            commands::git_add_all,
+            commands::git_commit,
+            commands::git_list_remotes,
+            commands::git_add_remote,
+            commands::git_remove_remote,
+            commands::git_push,
+            commands::git_pull,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

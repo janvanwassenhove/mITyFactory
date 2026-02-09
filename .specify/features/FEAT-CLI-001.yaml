@@ -1,0 +1,83 @@
+id: FEAT-CLI-001
+title: Command-Line Interface
+description: |
+  The mITyFactory CLI provides command-line access to all factory operations.
+  Supports project initialization, application creation, feature management,
+  validation, and quality gates with CI-friendly exit codes.
+status: implemented
+priority: critical
+created: 2026-01-15
+updated: 2026-02-01
+
+acceptance_criteria:
+  - init command creates Spec Kit and baseline ADRs
+  - create-app generates applications from templates
+  - add-feature triggers SDLC workflow for new features
+  - validate checks specs and policies
+  - smoke-templates verifies all templates are valid
+  - quality-gate runs comprehensive quality checks
+  - CI-friendly exit codes (0-5) for automation
+  - Verbose and quiet output modes
+  - Cross-platform support (Windows, macOS, Linux)
+
+commands:
+  - name: init
+    description: Initialize factory with Spec Kit and baseline ADRs
+    exit_codes: [0, 1, 2]
+
+  - name: create-app
+    description: Create new app from template with optional IaC
+    exit_codes: [0, 1, 2, 4]
+
+  - name: add-feature
+    description: Add feature to app via SDLC workflow
+    exit_codes: [0, 1, 2, 3]
+
+  - name: validate
+    description: Run spec and policy validation
+    exit_codes: [0, 1, 3]
+
+  - name: smoke-templates
+    description: Verify all templates are valid
+    exit_codes: [0, 1, 4]
+
+  - name: quality-gate
+    description: Run quality gate checks (lint, test, secrets)
+    exit_codes: [0, 1, 3]
+
+exit_codes:
+  0: Success
+  1: General error
+  2: Invalid arguments
+  3: Validation failure
+  4: Template error
+  5: IaC error
+
+components:
+  - path: crates/mity_cli/src/main.rs
+    purpose: CLI entry point with exit code handling
+  - path: crates/mity_cli/src/commands/mod.rs
+    purpose: Command definitions and argument parsing
+  - path: crates/mity_cli/src/commands/init.rs
+    purpose: Factory initialization command
+  - path: crates/mity_cli/src/commands/create_app.rs
+    purpose: Application creation from templates
+  - path: crates/mity_cli/src/commands/add_feature.rs
+    purpose: Feature addition via SDLC
+  - path: crates/mity_cli/src/commands/validate.rs
+    purpose: Spec and policy validation
+  - path: crates/mity_cli/src/commands/smoke_templates.rs
+    purpose: Template smoke testing
+  - path: crates/mity_cli/src/commands/quality_gate.rs
+    purpose: Quality gate execution
+
+dependencies:
+  - FEAT-SPEC-KIT-001
+
+related_adrs:
+  - ADR-0001-mityfactory-core.md
+
+notes: |
+  The CLI is the primary interface for CI/CD integration.
+  Exit codes are designed for scripted automation.
+  All commands respect --verbose and --quiet flags.
