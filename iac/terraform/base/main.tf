@@ -5,24 +5,6 @@ terraform {
   required_version = ">= 1.5.0"
 }
 
-# Variables that all applications need
-variable "app_name" {
-  description = "Name of the application"
-  type        = string
-}
-
-variable "environment" {
-  description = "Deployment environment (dev, staging, prod)"
-  type        = string
-  default     = "dev"
-}
-
-variable "tags" {
-  description = "Common tags to apply to all resources"
-  type        = map(string)
-  default     = {}
-}
-
 # Local values
 locals {
   common_tags = merge(
