@@ -1,0 +1,10 @@
+{
+  "context": {
+    "kind": "factory",
+    "factoryName": "mITyFactory"
+  },
+  "state": "gathering",
+  "activeAgent": "analyst",
+  "createdAt": "2026-02-10T11:42:47.307930500Z",
+  "updatedAt": "2026-02-10T11:43:12.297575500Z"
+}

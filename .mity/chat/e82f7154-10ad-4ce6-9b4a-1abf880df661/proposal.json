@@ -1,0 +1,14 @@
+{
+  "sessionId": "e82f7154-10ad-4ce6-9b4a-1abf880df661",
+  "appName": "wine",
+  "templateId": "fullstack-quarkus-react",
+  "stackTags": [
+    "java",
+    "quarkus",
+    "react",
+    "fullstack"
+  ],
+  "iac": {},
+  "changes": {},
+  "confidence": 0.8
+}
