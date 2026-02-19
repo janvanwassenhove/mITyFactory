@@ -73,10 +73,7 @@ jobs:
       - name: Validate all template manifests
         run: |
           echo "Validating template manifests..."
-          for manifest in templates/*/manifest.yaml; do
-            echo "Checking: $manifest"
-            ./bin/mity validate-template --manifest "$manifest" || exit 1
-          done
+          ./bin/mity smoke-templates
           echo "All manifests valid!"
 
   # ============================================================================
