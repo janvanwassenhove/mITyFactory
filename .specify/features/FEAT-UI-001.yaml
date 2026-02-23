@@ -14,6 +14,8 @@ acceptance_criteria:
   - Dashboard shows project overview and quick actions
   - Workspace view for active project development
   - Chat interface integrated with mity_chat
+  - Agent conversation indicator shows who is talking to whom during autopilot
+  - Delivery Pipeline tab shows full app lifecycle (test, quality, security, deploy)
   - Spec Kit browser for viewing/editing specifications
   - WCAG 2.1 AA accessibility compliance
   - Keyboard navigation for all interactive elements
@@ -50,6 +52,19 @@ ui_components:
     - logs: Build and execution logs
     - terminal: Embedded terminal
     - settings: Application configuration
+  
+  workspace_tabs:
+    - preview: Browser preview of running application
+    - code: Source code browser
+    - overview: Activity feed, cost summary, runtime status
+    - project: Project settings, build quality, cost breakdown
+    - architecture: 4+1 architecture views and specifications
+    - pipeline: Full delivery lifecycle (requirements through deployment)
+  
+  chat_panel:
+    - conversation_indicator: Animated agent-to-agent or user-to-agent communication visualization
+    - messages: Chat messages filtered from console output
+    - input: Message input with send/stop controls
 
   design_system:
     icons: Line-based SVG symbols (Feather-style)
@@ -62,3 +77,13 @@ notes: |
   the constitution's "Inclusive by Design" tenet.
   All interactive elements must be keyboard accessible.
   Icon-only buttons require aria-label attributes.
+
+  The chat panel uses an agent conversation indicator (replacing the old
+  bolt-pipeline progress bar) to visualize who is communicating with whom
+  during autopilot execution (e.g. User to Analyst, Architect to Implementer).
+  The indicator uses animated pulses with prefers-reduced-motion support.
+
+  The Delivery Pipeline tab (next to Architecture) provides a full lifecycle
+  view of each feature delivery: requirements, design, implementation, testing,
+  quality review, security scanning, and deployment. This is distinct from the
+  Overview tab's activity/station list which shows runtime events.

@@ -232,6 +232,41 @@ Always use CSS custom properties, never hardcode colors.
 └──────────┴──────────────────────────────────────────┘
 ```
 
+### Workspace View Tabs
+
+The workspace view has a left chat panel and a right panel with these tabs:
+- **Preview** - Browser preview of the running application
+- **Code** - Source code file browser
+- **Overview** - Activity feed, cost, runtime station list
+- **Project** - Project info, build quality, cost breakdown
+- **Architecture** - 4+1 architecture views and specifications
+- **Pipeline** - Full delivery lifecycle for each feature/fix
+
+### Chat Panel Components
+
+The chat panel (left side of workspace) contains:
+- **Agent Conversation Indicator** (`.agent-convo-bar`) - Animated visualization
+  showing who is communicating with whom during autopilot. Displays sender
+  (previous agent or user) and receiver (current active agent) with animated
+  pulse dots between them. Replaces the old bolt-pipeline progress bar.
+- **Chat Messages** - Conversation history filtered from console output
+- **Chat Input** - Message input with send/stop controls
+
+### Delivery Pipeline Tab
+
+The Pipeline tab (`.bolt-panel-pipeline`) shows the full application delivery
+lifecycle grouped into high-level stages:
+1. **Requirements & Analysis** (Analyst)
+2. **Architecture & Design** (Architect)
+3. **Implementation** (Implementer)
+4. **Testing** (Tester)
+5. **Quality & Review** (Reviewer)
+6. **Security & Compliance** (Security Engineer)
+7. **Build & Deploy** (DevOps Engineer)
+
+Each stage has sub-tasks and status indicators. This is different from the
+Overview tab's station list which shows raw runtime events.
+
 ### Spacing
 
 | Size | Value   |

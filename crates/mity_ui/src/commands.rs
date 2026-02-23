@@ -1061,6 +1061,9 @@ pub async fn intake_start(
     // Create initial proposal from the message
     let mut proposal = mity_chat::Proposal::new(session_id.clone(), "my-app");
     
+    // Capture the user's original demand / functional requirements
+    proposal.user_demand = Some(initial_message.clone());
+    
     // Try to extract app name from message using multiple patterns
     let lower = initial_message.to_lowercase();
     let extracted_name = extract_app_name_from_message(&initial_message, &lower);
@@ -1163,6 +1166,16 @@ pub async fn intake_send_message(
     let persistence = mity_chat::SessionPersistence::new(&workspace_root);
     let engine = mity_chat::AutopilotEngine::new(&workspace_root);
     
+    // Enrich the proposal's user_demand with any follow-up input from the user
+    // so subsequent agent stations see the full picture.
+    if let Ok(Some(mut proposal)) = persistence.load_proposal(&session_id) {
+        let current = proposal.user_demand.clone().unwrap_or_default();
+        if !current.contains(&content) {
+            proposal.user_demand = Some(format!("{}\n\n[Follow-up]: {}", current, content));
+            let _ = persistence.save_proposal(&session_id, &proposal);
+        }
+    }
+
     // Emit intervention event
     let event = mity_chat::TimelineEvent::intervention(&content);
     persistence.append_event(&session_id, &event).map_err(|e| e.to_string())?;

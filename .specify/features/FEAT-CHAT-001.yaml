@@ -23,6 +23,7 @@ acceptance_criteria:
   - User interrupt capability during autopilot
   - Guided intake for new application creation
   - Works without LLM key (deterministic fallback)
+  - Agent conversation indicator shows active sender/receiver during pipeline execution
 
 components:
   - path: crates/mity_chat/src/lib.rs

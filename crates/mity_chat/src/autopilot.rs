@@ -18,9 +18,18 @@ use crate::runtime::{
     ReadyInfo, RunState, RuntimeError, StationState, TimelineActor, 
     TimelineEvent, TimelineEventType, UrlInfo, questions,
 };
-use crate::types::{AgentKind, Message, Proposal};
+use crate::types::{AgentKind, DomainEntity, EntityField, FeatureRequirement, Message, Proposal};
 
 use chrono::Utc;
+
+/// Deserialization target for the Analyst LLM feature-extraction response.
+#[derive(Debug, serde::Deserialize)]
+struct AnalystExtraction {
+    #[serde(default)]
+    features: Vec<FeatureRequirement>,
+    #[serde(default)]
+    entities: Vec<DomainEntity>,
+}
 
 /// Output from running a command
 #[allow(dead_code)]
@@ -367,7 +376,44 @@ impl AutopilotEngine {
             return self.handle_error_report(session_id, message).await;
         }
         
+        // If the message looks like a feature / requirement request rather than
+        // a command, enrich the proposal's user_demand so it is picked up by
+        // subsequent agent stations.
+        if self.is_demand_message(&lower) {
+            if let Ok(Some(mut proposal)) = self.persistence.load_proposal(session_id) {
+                let current = proposal.user_demand.clone().unwrap_or_default();
+                proposal.user_demand = Some(format!("{}\n\n[Follow-up]: {}", current, message));
+                // Clear extracted features so the analyst re-extracts from the updated demand
+                proposal.features.clear();
+                proposal.domain_entities.clear();
+                let _ = self.persistence.save_proposal(session_id, &proposal);
+
+                let event = TimelineEvent::info(
+                    TimelineActor::Analyst,
+                    "📝 Updated requirements with your new input. The factory will incorporate this.",
+                );
+                self.persistence.append_event(session_id, &event)?;
+            }
+        }
+        
         Ok(runtime)
+    }
+
+    /// Detect whether a user message is adding / changing functional requirements
+    /// (as opposed to a command like "start the app" or "use aws").
+    fn is_demand_message(&self, message: &str) -> bool {
+        let feature_keywords = [
+            "add ", "want ", "need ", "should ", "must ", "create ", "build ",
+            "implement ", "feature", "search", "compare", "list ", "filter",
+            "sort", "display", "show ", "page ", "endpoint", "api ",
+            "database", "table", "entity", "model", "field", "column",
+            "also ", "additionally", "include ", "support ", "allow ",
+            "integrate", "import", "export", "upload", "download",
+        ];
+        // Only consider it a demand message if it is NOT an error report or command
+        !self.is_start_command(message)
+            && !self.is_error_report(message)
+            && feature_keywords.iter().any(|kw| message.contains(kw))
     }
 
     /// Check if message is a start/run/launch command
@@ -1795,23 +1841,50 @@ impl AutopilotEngine {
 
         // Re-run build and launch
         let build_result = self.station_build_test(session_id, &proposal).await;
-        let build_ok = build_result.is_ok();
-        if let Err(ref e) = build_result {
-            let event = TimelineEvent::warning(
-                TimelineActor::Tester,
-                &format!("Build retry failed: {}", e),
-            );
-            self.persistence.append_event(session_id, &event)?;
+        let build_ok = matches!(&build_result, Ok(StationResult::Done));
+        match &build_result {
+            Err(ref e) => {
+                let event = TimelineEvent::warning(
+                    TimelineActor::Tester,
+                    &format!("Build retry failed: {}", e),
+                );
+                self.persistence.append_event(session_id, &event)?;
+            }
+            Ok(StationResult::Failed(msg)) => {
+                let event = TimelineEvent::warning(
+                    TimelineActor::Tester,
+                    &format!("Build retry failed: {}", msg),
+                );
+                self.persistence.append_event(session_id, &event)?;
+            }
+            Ok(StationResult::NeedsInput(_)) => {
+                let event = TimelineEvent::warning(
+                    TimelineActor::Tester,
+                    "Build needs manual intervention",
+                );
+                self.persistence.append_event(session_id, &event)?;
+            }
+            _ => {}
         }
         
         let launch_result = self.station_launch(session_id, &proposal).await;
-        let launch_ok = launch_result.is_ok();
-        if let Err(ref e) = launch_result {
-            let event = TimelineEvent::warning(
-                TimelineActor::DevOps,
-                &format!("Launch retry failed: {}", e),
-            );
-            self.persistence.append_event(session_id, &event)?;
+        let launch_ok = matches!(&launch_result, Ok(StationResult::Done));
+        match &launch_result {
+            Err(ref e) => {
+                let event = TimelineEvent::warning(
+                    TimelineActor::DevOps,
+                    &format!("Launch retry failed: {}", e),
+                );
+                self.persistence.append_event(session_id, &event)?;
+            }
+            Ok(StationResult::Failed(msg)) => {
+                let event = TimelineEvent::warning(
+                    TimelineActor::DevOps,
+                    &format!("Launch retry failed: {}", msg),
+                );
+                self.persistence.append_event(session_id, &event)?;
+            }
+            _ => {}
         }
 
         // Update station states based on results
@@ -1921,6 +1994,28 @@ impl AutopilotEngine {
                     
                     runtime.last_event = format!("Completed: {} (recovered)", station_label);
                 }
+                Ok(StationResult::Failed(msg)) => {
+                    // Station explicitly reported failure (e.g. launch failed after self-healing)
+                    runtime.stations[station_idx].state = StationState::Failed;
+                    runtime.run_state = RunState::Failed;
+                    runtime.error = Some(RuntimeError {
+                        message: msg.clone(),
+                        details: None,
+                        station: Some(station_name.clone()),
+                    });
+                    
+                    let fail_event = TimelineEvent::new(
+                        TimelineEventType::StationFailed,
+                        TimelineActor::from(&station_agent),
+                        format!("Failed: {} - {}", station_label, msg),
+                    ).with_station(&station_name);
+                    self.persistence.append_event(session_id, &fail_event)?;
+                    
+                    runtime.last_event = format!("Failed at: {}", station_label);
+                    runtime.updated_at = Utc::now();
+                    self.persistence.save_runtime(session_id, &runtime)?;
+                    return Ok(runtime);
+                }
                 Ok(StationResult::NeedsInput(questions)) => {
                     // Station needs user input
                     runtime.stations[station_idx].state = StationState::Waiting;
@@ -2021,10 +2116,10 @@ impl AutopilotEngine {
         Ok(StationResult::Done)
     }
 
-    /// Analyze station - ensure template is selected
+    /// Analyze station - ensure template is selected AND extract features from user demand
     async fn station_analyze(
         &self,
-        _session_id: &str,
+        session_id: &str,
         proposal: &Option<Proposal>,
     ) -> ChatResult<StationResult> {
         let proposal = match proposal {
@@ -2040,10 +2135,105 @@ impl AutopilotEngine {
             ]));
         }
 
+        // If we have a user demand and LLM, extract structured features
+        if let (Some(ref demand), Some(ref llm)) = (&proposal.user_demand, &self.llm) {
+            if proposal.features.is_empty() {
+                let event = TimelineEvent::info(
+                    TimelineActor::Analyst,
+                    "🔍 Analyst: Extracting functional requirements from your request...",
+                );
+                self.persistence.append_event(session_id, &event)?;
+
+                let system_prompt = r#"You are an expert Business Analyst. Given a user request, extract structured features and domain entities.
+
+Return ONLY valid JSON (no markdown fences, no explanation) in this exact format:
+{
+  "features": [
+    {"id": "feature-id", "title": "Short title", "description": "Detailed description", "priority": "must-have"}
+  ],
+  "entities": [
+    {"name": "EntityName", "description": "What this entity represents", "fields": [
+      {"name": "field_name", "type": "String", "required": true}
+    ]}
+  ]
+}
+
+Types can be: String, i64, f64, bool, Vec<String>, DateTime, Option<String>.
+Priorities: must-have, should-have, nice-to-have.
+Be thorough - extract ALL implied features and entities from the request."#;
+
+                let user_prompt = format!(
+                    "User request: {}\nApp name: {}\nTemplate: {}",
+                    demand, proposal.app_name, proposal.template_id.as_deref().unwrap_or("unknown")
+                );
+
+                let llm_messages = vec![
+                    Message::system(system_prompt),
+                    Message::user(&user_prompt),
+                ];
+
+                match llm.complete(&llm_messages, &AgentKind::Analyst).await {
+                    Ok(response) => {
+                        // Record cost
+                        let model = LlmModel::from_str(&response.model);
+                        let usage_record = LlmUsageRecord::new(
+                            model, response.input_tokens, response.output_tokens,
+                        ).with_agent("Analyst");
+                        let _ = self.persistence.record_llm_usage(session_id, usage_record);
+
+                        // Parse the JSON response
+                        if let Ok(parsed) = self.parse_analyst_response(&response.content) {
+                            let mut updated_proposal = proposal.clone();
+                            let feat_count = parsed.features.len();
+                            let ent_count = parsed.entities.len();
+                            updated_proposal.features = parsed.features;
+                            updated_proposal.domain_entities = parsed.entities;
+                            self.persistence.save_proposal(session_id, &updated_proposal)?;
+
+                            let event = TimelineEvent::info(
+                                TimelineActor::Analyst,
+                                &format!("✓ Extracted {} feature(s) and {} domain entity/entities", feat_count, ent_count),
+                            );
+                            self.persistence.append_event(session_id, &event)?;
+
+                            // Log each feature
+                            for f in &updated_proposal.features {
+                                let event = TimelineEvent::info(
+                                    TimelineActor::Analyst,
+                                    &format!("  📋 Feature: {} - {}", f.title, f.description),
+                                );
+                                self.persistence.append_event(session_id, &event)?;
+                            }
+                            for e in &updated_proposal.domain_entities {
+                                let event = TimelineEvent::info(
+                                    TimelineActor::Analyst,
+                                    &format!("  📦 Entity: {} ({} fields)", e.name, e.fields.len()),
+                                );
+                                self.persistence.append_event(session_id, &event)?;
+                            }
+                        } else {
+                            let event = TimelineEvent::info(
+                                TimelineActor::Analyst,
+                                "⚠️ Could not parse feature extraction - will use raw demand for implementation.",
+                            );
+                            self.persistence.append_event(session_id, &event)?;
+                        }
+                    }
+                    Err(e) => {
+                        let event = TimelineEvent::info(
+                            TimelineActor::Analyst,
+                            &format!("⚠️ Feature extraction LLM call failed: {}. Continuing with raw demand.", e),
+                        );
+                        self.persistence.append_event(session_id, &event)?;
+                    }
+                }
+            }
+        }
+
         Ok(StationResult::Done)
     }
 
-    /// Architect station - design decisions and architecture documentation
+    /// Architect station - design decisions and architecture documentation, driven by user demand.
     async fn station_architect(
         &self,
         session_id: &str,
@@ -2065,31 +2255,40 @@ impl AutopilotEngine {
             );
             self.persistence.append_event(session_id, &event)?;
             
-            // Try to copy from template first
-            let template_id = proposal.template_id.as_deref().unwrap_or("java-springboot");
-            let template_docs = self.workspace_root
-                .join("templates")
-                .join(template_id)
-                .join("template")
-                .join("docs")
-                .join("architecture");
-            
-            if template_docs.exists() {
-                // Copy architecture docs from template
-                if let Err(e) = self.copy_directory(&template_docs, &docs_path) {
-                    tracing::warn!("Failed to copy architecture docs from template: {}", e);
-                    // Fall back to generating fresh docs
-                    self.generate_architecture_docs(&docs_path, proposal)?;
-                } else {
-                    let event = TimelineEvent::info(
-                        TimelineActor::Architect,
-                        "✓ Copied architecture documentation from template.",
-                    );
-                    self.persistence.append_event(session_id, &event)?;
-                }
+            // If we have user demand + LLM, generate demand-aware architecture
+            if proposal.user_demand.is_some() && self.llm.is_some() {
+                let event = TimelineEvent::info(
+                    TimelineActor::Architect,
+                    "🏗️ Architect: Designing domain-specific architecture based on your requirements...",
+                );
+                self.persistence.append_event(session_id, &event)?;
+                
+                self.generate_demand_aware_architecture(session_id, &docs_path, proposal).await?;
             } else {
-                // Generate fresh architecture docs
-                self.generate_architecture_docs(&docs_path, proposal)?;
+                // Try to copy from template first
+                let template_id = proposal.template_id.as_deref().unwrap_or("java-springboot");
+                let template_docs = self.workspace_root
+                    .join("templates")
+                    .join(template_id)
+                    .join("template")
+                    .join("docs")
+                    .join("architecture");
+                
+                if template_docs.exists() {
+                    // Copy architecture docs from template
+                    if let Err(e) = self.copy_directory(&template_docs, &docs_path) {
+                        tracing::warn!("Failed to copy architecture docs from template: {}", e);
+                        self.generate_architecture_docs(&docs_path, proposal)?;
+                    } else {
+                        let event = TimelineEvent::info(
+                            TimelineActor::Architect,
+                            "✓ Copied architecture documentation from template.",
+                        );
+                        self.persistence.append_event(session_id, &event)?;
+                    }
+                } else {
+                    self.generate_architecture_docs(&docs_path, proposal)?;
+                }
             }
             
             let event = TimelineEvent::info(
@@ -2386,16 +2585,22 @@ What becomes easier or more difficult to do because of this change?
 
     /// Implement station - generate code based on user requirements
     /// 
-    /// This station uses LLM to analyze the user's requirements from the chat
-    /// and generate actual feature code beyond the basic template scaffold.
+    /// This station uses LLM to analyze the user's requirements (user_demand,
+    /// features, domain entities) and generate actual feature code beyond the
+    /// basic template scaffold. Every agent station now receives the full user
+    /// demand context so the produced application matches what the user asked for.
     async fn station_implement(
         &self,
         session_id: &str,
         proposal: &Option<Proposal>,
     ) -> ChatResult<StationResult> {
-        let proposal = match proposal {
+        // Reload the proposal from disk to pick up features/entities from analyze
+        let proposal = match self.persistence.load_proposal(session_id)? {
             Some(p) => p,
-            None => return Ok(StationResult::Done),
+            None => match proposal {
+                Some(p) => p.clone(),
+                None => return Ok(StationResult::Done),
+            }
         };
 
         let app_path = self.workspace_root.join("workspaces").join(&proposal.app_name);
@@ -2414,40 +2619,50 @@ What becomes easier or more difficult to do because of this change?
             }
         };
 
-        // Load conversation history to understand user requirements
-        let messages = self.persistence.load_messages(session_id)?;
-        
-        // Extract user requirements from messages
-        let user_requirements: Vec<&str> = messages
-            .iter()
-            .filter(|m| m.role == crate::types::MessageRole::User)
-            .map(|m| m.content.as_str())
-            .collect();
-        
-        if user_requirements.is_empty() {
-            return Ok(StationResult::Done);
+        // Build rich demand context
+        let demand_context = self.build_demand_context(&proposal);
+        if demand_context.is_empty() {
+            // No user demand at all (shouldn't happen normally) — fall back to chat
+            let messages = self.persistence.load_messages(session_id)?;
+            let user_requirements: Vec<&str> = messages
+                .iter()
+                .filter(|m| m.role == crate::types::MessageRole::User)
+                .map(|m| m.content.as_str())
+                .collect();
+            if user_requirements.is_empty() {
+                return Ok(StationResult::Done);
+            }
         }
 
         // Emit start event
         let event = TimelineEvent::info(
             TimelineActor::Implementer,
-            "🔧 Implementer: Analyzing requirements to generate features...",
+            "🔧 Implementer: Implementing your requested features...",
         );
         self.persistence.append_event(session_id, &event)?;
 
-        // Build the implementation prompt
+        // Read existing scaffold files to build on top of them
         let template_id = proposal.template_id.as_deref().unwrap_or("unknown");
-        let requirements_text = user_requirements.join("\n");
-        
+        let existing_files = self.read_project_files(&app_path, template_id)?;
+
+        // Build the implementation prompt with full demand context
         let system_prompt = self.build_implementation_system_prompt(template_id, &app_path);
         let user_prompt = format!(
-            "Based on the following user requirements, generate the necessary code changes:\n\n\
-             ## User Requirements:\n{}\n\n\
-             ## App Name: {}\n\
-             ## Template: {}\n\n\
-             Analyze the requirements and generate code for the requested features. \
-             Return your response as a series of file operations.",
-            requirements_text, proposal.app_name, template_id
+            "{demand_context}\n\n\
+             ## Existing Scaffold Files (build ON TOP of these, do NOT remove existing code):\n\
+             {existing_files}\n\n\
+             ## Instructions:\n\
+             1. Implement ALL the features listed above as production-quality code.\n\
+             2. Create proper domain models/entities with all fields.\n\
+             3. Create service/business logic layer with real functionality.\n\
+             4. Create REST API endpoints (controllers/routes) for each feature.\n\
+             5. Create repository/data-access layer (use in-memory storage or H2/SQLite for now).\n\
+             6. Wire up dependency injection / module imports.\n\
+             7. Update any configuration files needed.\n\
+             8. Generate COMPLETE file contents — not snippets.\n\n\
+             Return your response as a series of file operations using ### FILE: headers.",
+            demand_context = demand_context,
+            existing_files = existing_files,
         );
 
         // Prepare messages for LLM
@@ -2501,6 +2716,174 @@ What becomes easier or more difficult to do because of this change?
         }
 
         Ok(StationResult::Done)
+    }
+
+    // =========================================================================
+    // DEMAND-DRIVEN HELPER METHODS
+    // These methods extract and format user demand context so that every agent
+    // station works with the full picture of what the user wants to build.
+    // =========================================================================
+
+    /// Build a rich textual demand context from the Proposal's user_demand,
+    /// features, and domain entities. This is fed to every LLM-powered station.
+    fn build_demand_context(&self, proposal: &Proposal) -> String {
+        let mut parts = Vec::new();
+        
+        parts.push(format!("## App Name: {}", proposal.app_name));
+        parts.push(format!("## Template: {}", proposal.template_id.as_deref().unwrap_or("unknown")));
+        
+        if let Some(ref demand) = proposal.user_demand {
+            parts.push(format!("\n## User Demand (original request):\n{}", demand));
+        }
+        
+        if !proposal.features.is_empty() {
+            parts.push("\n## Functional Features:".to_string());
+            for f in &proposal.features {
+                parts.push(format!(
+                    "- **{}** [{}]: {}\n  Priority: {}",
+                    f.title, f.id, f.description, f.priority
+                ));
+            }
+        }
+        
+        if !proposal.domain_entities.is_empty() {
+            parts.push("\n## Domain Model:".to_string());
+            for e in &proposal.domain_entities {
+                let mut entity_str = format!("### Entity: {}", e.name);
+                if let Some(ref desc) = e.description {
+                    entity_str.push_str(&format!("\n{}", desc));
+                }
+                entity_str.push_str("\nFields:");
+                for f in &e.fields {
+                    entity_str.push_str(&format!(
+                        "\n  - {} : {} {}",
+                        f.name, f.field_type,
+                        if f.required { "(required)" } else { "(optional)" }
+                    ));
+                }
+                parts.push(entity_str);
+            }
+        }
+        
+        parts.join("\n")
+    }
+
+    /// Internal struct for parsing the Analyst LLM response.
+    /// Just used via serde_json.
+    fn parse_analyst_response(&self, content: &str) -> Result<AnalystExtraction, String> {
+        // Try to find JSON in the response (may be wrapped in markdown fences)
+        let json_str = if let Some(start) = content.find('{') {
+            if let Some(end) = content.rfind('}') {
+                &content[start..=end]
+            } else {
+                content
+            }
+        } else {
+            content
+        };
+        
+        serde_json::from_str::<AnalystExtraction>(json_str)
+            .map_err(|e| format!("JSON parse error: {}", e))
+    }
+
+    /// Generate demand-aware architecture documentation using LLM.
+    async fn generate_demand_aware_architecture(
+        &self,
+        session_id: &str,
+        docs_path: &std::path::Path,
+        proposal: &Proposal,
+    ) -> ChatResult<()> {
+        let llm = match &self.llm {
+            Some(l) => l,
+            None => {
+                // Fall back to generic template
+                return self.generate_architecture_docs(docs_path, proposal);
+            }
+        };
+
+        let demand_context = self.build_demand_context(proposal);
+        let template = proposal.template_id.as_deref().unwrap_or("unknown");
+
+        let system_prompt = format!(
+            r#"You are an expert Software Architect. Generate architecture documentation for a {template} application.
+
+## Output Format
+Return documentation as multiple files using ### FILE: headers with the COMPLETE content for each file.
+
+Generate these files:
+1. overview.md - Architecture overview, technology stack, high-level design driven by the user's requirements
+2. scenarios.md - Use case scenarios matching the user's actual features
+3. logical.md - Component/package structure showing how the domain entities and features map to code modules
+4. development.md - Module organisation, build & run instructions, development guidelines
+5. process.md - Runtime behavior, request flows for main features
+6. physical.md - Deployment architecture
+7. adr/ADR-0001-initial-architecture.md - ADR for the initial technology and architecture choice
+
+Be specific to the user's domain (not generic boilerplate). Reference the actual features and entities."#,
+            template = template
+        );
+
+        let user_prompt = format!(
+            "{demand_context}\n\nGenerate architecture documentation for this application.",
+            demand_context = demand_context,
+        );
+
+        let llm_messages = vec![
+            Message::system(&system_prompt),
+            Message::user(&user_prompt),
+        ];
+
+        match llm.complete(&llm_messages, &AgentKind::Architect).await {
+            Ok(response) => {
+                let model = LlmModel::from_str(&response.model);
+                let usage_record = LlmUsageRecord::new(
+                    model, response.input_tokens, response.output_tokens,
+                ).with_agent("Architect");
+                let _ = self.persistence.record_llm_usage(session_id, usage_record);
+
+                let event = TimelineEvent::info(
+                    TimelineActor::Architect,
+                    &format!("✨ Generated domain-specific architecture docs ({} tokens)", 
+                        response.input_tokens + response.output_tokens),
+                );
+                self.persistence.append_event(session_id, &event)?;
+
+                // Write the LLM-generated docs
+                std::fs::create_dir_all(docs_path)?;
+                std::fs::create_dir_all(docs_path.join("adr"))?;
+                
+                if let Err(e) = self.apply_llm_code_changes(session_id, &response.content, docs_path).await {
+                    // If parsing failed, write the raw content as overview.md
+                    tracing::warn!("Could not parse arch docs from LLM: {}", e);
+                    std::fs::write(docs_path.join("overview.md"), &response.content)?;
+                }
+            }
+            Err(e) => {
+                let event = TimelineEvent::info(
+                    TimelineActor::Architect,
+                    &format!("⚠️ Architecture LLM call failed: {}. Using template docs.", e),
+                );
+                self.persistence.append_event(session_id, &event)?;
+                self.generate_architecture_docs(docs_path, proposal)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Get the appropriate test framework name for a template
+    fn test_framework_for_template(template_id: &str) -> &'static str {
+        match template_id {
+            t if t.contains("spring") => "JUnit 5 + Spring Boot Test + MockMvc",
+            t if t.contains("quarkus") => "JUnit 5 + Quarkus Test + RestAssured",
+            t if t.contains("python") || t.contains("fastapi") => "pytest + httpx (async test client)",
+            t if t.contains("dotnet") => "xUnit + WebApplicationFactory",
+            t if t.contains("vue") => "Vitest + Vue Test Utils",
+            t if t.contains("react") => "Jest + React Testing Library",
+            t if t.contains("angular") => "Jasmine + Karma + Angular TestBed",
+            t if t.contains("rust") => "cargo test (built-in)",
+            _ => "appropriate framework for the stack",
+        }
     }
 
     /// Build the system prompt for code implementation
@@ -2834,31 +3217,329 @@ Provide fixes as file changes:
     /// Test station - generate/run tests
     async fn station_test(
         &self,
-        _session_id: &str,
-        _proposal: &Option<Proposal>,
+        session_id: &str,
+        proposal: &Option<Proposal>,
     ) -> ChatResult<StationResult> {
-        // For MVP, pass through
-        // In future: generate and run tests
+        // Reload proposal to get latest features/entities
+        let proposal = match self.persistence.load_proposal(session_id)? {
+            Some(p) => p,
+            None => match proposal {
+                Some(p) => p.clone(),
+                None => return Ok(StationResult::Done),
+            }
+        };
+
+        let llm = match &self.llm {
+            Some(l) => l,
+            None => {
+                let event = TimelineEvent::info(
+                    TimelineActor::Tester,
+                    "⚠️ No LLM configured - skipping test generation.",
+                );
+                self.persistence.append_event(session_id, &event)?;
+                return Ok(StationResult::Done);
+            }
+        };
+
+        let app_path = self.workspace_root.join("workspaces").join(&proposal.app_name);
+        if !app_path.exists() {
+            return Ok(StationResult::Done);
+        }
+
+        let event = TimelineEvent::info(
+            TimelineActor::Tester,
+            "🧪 Tester: Generating tests for your features...",
+        );
+        self.persistence.append_event(session_id, &event)?;
+
+        let template_id = proposal.template_id.as_deref().unwrap_or("unknown");
+        let demand_context = self.build_demand_context(&proposal);
+        let source_files = self.read_project_files(&app_path, template_id)?;
+
+        let system_prompt = format!(
+            r#"You are an expert Test Engineer. Generate comprehensive tests for the application.
+
+## Project Type: {template}
+## Test Framework: {test_fw}
+
+## Output Format
+Generate test files:
+
+### FILE: <relative_path>
+```<language>
+<complete test file content>
+```
+
+## Guidelines:
+1. Generate unit tests for each service / business logic class
+2. Generate integration tests for each REST endpoint
+3. Test both happy-path and error scenarios
+4. Use the standard testing framework for the stack
+5. Include meaningful test names and assertions
+6. Return COMPLETE file contents
+"#,
+            template = template_id,
+            test_fw = Self::test_framework_for_template(template_id),
+        );
+
+        let user_prompt = format!(
+            "{demand_context}\n\n## Source Files To Test:\n{source}\n\n\
+             Generate comprehensive unit and integration tests for all features above.",
+            demand_context = demand_context,
+            source = source_files,
+        );
+
+        let llm_messages = vec![
+            Message::system(&system_prompt),
+            Message::user(&user_prompt),
+        ];
+
+        match llm.complete(&llm_messages, &AgentKind::Tester).await {
+            Ok(response) => {
+                let model = LlmModel::from_str(&response.model);
+                let usage_record = LlmUsageRecord::new(
+                    model, response.input_tokens, response.output_tokens,
+                ).with_agent("Tester");
+                let _ = self.persistence.record_llm_usage(session_id, usage_record);
+
+                let event = TimelineEvent::info(
+                    TimelineActor::Tester,
+                    &format!("✨ Generated test code ({} tokens)", response.input_tokens + response.output_tokens),
+                );
+                self.persistence.append_event(session_id, &event)?;
+
+                if let Err(e) = self.apply_llm_code_changes(session_id, &response.content, &app_path).await {
+                    let event = TimelineEvent::info(
+                        TimelineActor::Tester,
+                        &format!("⚠️ Error applying test files: {}. Continuing.", e),
+                    );
+                    self.persistence.append_event(session_id, &event)?;
+                }
+            }
+            Err(e) => {
+                let event = TimelineEvent::info(
+                    TimelineActor::Tester,
+                    &format!("⚠️ Test generation LLM call failed: {}. Continuing.", e),
+                );
+                self.persistence.append_event(session_id, &event)?;
+            }
+        }
+
         Ok(StationResult::Done)
     }
 
-    /// Review station - code quality checks
+    /// Review station - code quality checks using LLM
     async fn station_review(
         &self,
-        _session_id: &str,
-        _proposal: &Option<Proposal>,
+        session_id: &str,
+        proposal: &Option<Proposal>,
     ) -> ChatResult<StationResult> {
-        // For MVP, pass through
+        let proposal = match self.persistence.load_proposal(session_id)? {
+            Some(p) => p,
+            None => match proposal {
+                Some(p) => p.clone(),
+                None => return Ok(StationResult::Done),
+            }
+        };
+
+        let llm = match &self.llm {
+            Some(l) => l,
+            None => return Ok(StationResult::Done),
+        };
+
+        let app_path = self.workspace_root.join("workspaces").join(&proposal.app_name);
+        if !app_path.exists() {
+            return Ok(StationResult::Done);
+        }
+
+        let event = TimelineEvent::info(
+            TimelineActor::Reviewer,
+            "🔍 Reviewer: Checking code quality and completeness...",
+        );
+        self.persistence.append_event(session_id, &event)?;
+
+        let template_id = proposal.template_id.as_deref().unwrap_or("unknown");
+        let demand_context = self.build_demand_context(&proposal);
+        let source_files = self.read_project_files(&app_path, template_id)?;
+
+        let system_prompt = r#"You are an expert Code Reviewer. Review the generated code for quality, completeness, and adherence to user requirements.
+
+## Output Format
+Return a structured review as plain text (NOT code blocks):
+
+### SUMMARY
+<overall assessment: PASS, NEEDS_WORK, or FAIL>
+
+### FINDINGS
+For each issue found:
+- **[SEVERITY]** <location>: <description>
+  Suggestion: <how to fix>
+
+Severity levels: CRITICAL, WARNING, INFO
+
+### COMPLETENESS CHECK
+List each user feature and whether it is implemented: ✓ or ✗
+
+### RECOMMENDATIONS
+Numbered list of prioritized improvements.
+
+Be thorough but constructive. Focus on actual bugs and missing functionality, not style nits."#;
+
+        let user_prompt = format!(
+            "{demand_context}\n\n## Code To Review:\n{source}\n\n\
+             Review this code: does it correctly implement all user-requested features? Are there bugs or missing pieces?",
+            demand_context = demand_context,
+            source = source_files,
+        );
+
+        let llm_messages = vec![
+            Message::system(system_prompt),
+            Message::user(&user_prompt),
+        ];
+
+        match llm.complete(&llm_messages, &AgentKind::Reviewer).await {
+            Ok(response) => {
+                let model = LlmModel::from_str(&response.model);
+                let usage_record = LlmUsageRecord::new(
+                    model, response.input_tokens, response.output_tokens,
+                ).with_agent("Reviewer");
+                let _ = self.persistence.record_llm_usage(session_id, usage_record);
+
+                // Write review report to project
+                let report_path = app_path.join("docs").join("review-report.md");
+                if let Some(parent) = report_path.parent() {
+                    let _ = std::fs::create_dir_all(parent);
+                }
+                let _ = std::fs::write(&report_path, &response.content);
+
+                // Emit summary to timeline
+                let summary_line = response.content.lines()
+                    .find(|l| l.contains("PASS") || l.contains("NEEDS_WORK") || l.contains("FAIL"))
+                    .unwrap_or("Review completed");
+
+                let event = TimelineEvent::info(
+                    TimelineActor::Reviewer,
+                    &format!("📋 Review result: {}", summary_line.trim()),
+                );
+                self.persistence.append_event(session_id, &event)?;
+            }
+            Err(e) => {
+                let event = TimelineEvent::info(
+                    TimelineActor::Reviewer,
+                    &format!("⚠️ Code review LLM call failed: {}. Continuing.", e),
+                );
+                self.persistence.append_event(session_id, &event)?;
+            }
+        }
+
         Ok(StationResult::Done)
     }
 
-    /// Security station - security scan
+    /// Security station - security scan using LLM
     async fn station_secure(
         &self,
-        _session_id: &str,
-        _proposal: &Option<Proposal>,
+        session_id: &str,
+        proposal: &Option<Proposal>,
     ) -> ChatResult<StationResult> {
-        // For MVP, pass through
+        let proposal = match self.persistence.load_proposal(session_id)? {
+            Some(p) => p,
+            None => match proposal {
+                Some(p) => p.clone(),
+                None => return Ok(StationResult::Done),
+            }
+        };
+
+        let llm = match &self.llm {
+            Some(l) => l,
+            None => return Ok(StationResult::Done),
+        };
+
+        let app_path = self.workspace_root.join("workspaces").join(&proposal.app_name);
+        if !app_path.exists() {
+            return Ok(StationResult::Done);
+        }
+
+        let event = TimelineEvent::info(
+            TimelineActor::Security,
+            "🔒 Security: Scanning for vulnerabilities...",
+        );
+        self.persistence.append_event(session_id, &event)?;
+
+        let template_id = proposal.template_id.as_deref().unwrap_or("unknown");
+        let source_files = self.read_project_files(&app_path, template_id)?;
+
+        let system_prompt = r#"You are an expert Security Engineer. Scan the code for security vulnerabilities.
+
+## Output Format
+Return a security report as plain text:
+
+### SECURITY SUMMARY
+<overall risk: LOW, MEDIUM, HIGH, CRITICAL>
+
+### VULNERABILITIES
+For each issue:
+- **[SEVERITY]** <CWE-ID if applicable> <location>: <description>
+  Impact: <what could go wrong>
+  Fix: <recommended remediation>
+
+### OWASP TOP 10 CHECK
+For each relevant OWASP category, state PASS or AT_RISK:
+- A01 Broken Access Control: ...
+- A02 Cryptographic Failures: ...
+- A03 Injection: ...
+- etc.
+
+### RECOMMENDATIONS
+Prioritized list of security improvements.
+
+Focus on real, exploitable issues — not theoretical concerns."#;
+
+        let user_prompt = format!(
+            "## Code To Scan:\n{source}\n\n\
+             Perform a security review of this application code.",
+            source = source_files,
+        );
+
+        let llm_messages = vec![
+            Message::system(system_prompt),
+            Message::user(&user_prompt),
+        ];
+
+        match llm.complete(&llm_messages, &AgentKind::Security).await {
+            Ok(response) => {
+                let model = LlmModel::from_str(&response.model);
+                let usage_record = LlmUsageRecord::new(
+                    model, response.input_tokens, response.output_tokens,
+                ).with_agent("Security");
+                let _ = self.persistence.record_llm_usage(session_id, usage_record);
+
+                // Write security report
+                let report_path = app_path.join("docs").join("security-report.md");
+                if let Some(parent) = report_path.parent() {
+                    let _ = std::fs::create_dir_all(parent);
+                }
+                let _ = std::fs::write(&report_path, &response.content);
+
+                // Emit summary
+                let summary_line = response.content.lines()
+                    .find(|l| l.contains("LOW") || l.contains("MEDIUM") || l.contains("HIGH") || l.contains("CRITICAL"))
+                    .unwrap_or("Security scan completed");
+
+                let event = TimelineEvent::info(
+                    TimelineActor::Security,
+                    &format!("🛡️ Security result: {}", summary_line.trim()),
+                );
+                self.persistence.append_event(session_id, &event)?;
+            }
+            Err(e) => {
+                let event = TimelineEvent::info(
+                    TimelineActor::Security,
+                    &format!("⚠️ Security scan LLM call failed: {}. Continuing.", e),
+                );
+                self.persistence.append_event(session_id, &event)?;
+            }
+        }
+
         Ok(StationResult::Done)
     }
 
@@ -2895,14 +3576,96 @@ Provide fixes as file changes:
         Ok(StationResult::Done)
     }
 
-    /// Gate station - final quality checks
+    /// Gate station - final quality checks based on review and security reports
     async fn station_gate(
         &self,
-        _session_id: &str,
-        _proposal: &Option<Proposal>,
+        session_id: &str,
+        proposal: &Option<Proposal>,
     ) -> ChatResult<StationResult> {
-        // For MVP, pass through
-        // In future: run all validators
+        let proposal = match proposal {
+            Some(p) => p,
+            None => return Ok(StationResult::Done),
+        };
+
+        let app_path = self.workspace_root.join("workspaces").join(&proposal.app_name);
+        let docs_path = app_path.join("docs");
+
+        let mut issues: Vec<String> = Vec::new();
+
+        // Check review report
+        let review_path = docs_path.join("review-report.md");
+        if review_path.exists() {
+            if let Ok(content) = std::fs::read_to_string(&review_path) {
+                let lower = content.to_lowercase();
+                // Look for critical / blocking indicators
+                if lower.contains("critical") || lower.contains("blocking") || lower.contains("must fix") {
+                    issues.push("Code review report contains critical issues".to_string());
+                }
+            }
+        }
+
+        // Check security report
+        let security_path = docs_path.join("security-report.md");
+        if security_path.exists() {
+            if let Ok(content) = std::fs::read_to_string(&security_path) {
+                let lower = content.to_lowercase();
+                if lower.contains("critical vulnerability") || lower.contains("high severity") {
+                    issues.push("Security report contains high-severity vulnerabilities".to_string());
+                }
+            }
+        }
+
+        // Check that features from the demand are marked as implemented
+        if !proposal.features.is_empty() {
+            let _demand_ctx = self.build_demand_context(proposal);
+            let event = TimelineEvent::info(
+                TimelineActor::Factory,
+                &format!(
+                    "🔍 Quality gate checking {} features and {} entities",
+                    proposal.features.len(),
+                    proposal.domain_entities.len()
+                ),
+            );
+            self.persistence.append_event(session_id, &event)?;
+
+            // Quick file-system check: do source files reference domain entities?
+            for entity in &proposal.domain_entities {
+                let entity_lower = entity.name.to_lowercase();
+                let found = walkdir::WalkDir::new(&app_path)
+                    .max_depth(6)
+                    .into_iter()
+                    .filter_map(|e| e.ok())
+                    .filter(|e| {
+                        let ext = e.path().extension().and_then(|x| x.to_str()).unwrap_or("");
+                        matches!(ext, "rs" | "py" | "java" | "kt" | "ts" | "js" | "cs" | "vue" | "html")
+                    })
+                    .any(|e| {
+                        std::fs::read_to_string(e.path())
+                            .map(|c| c.to_lowercase().contains(&entity_lower))
+                            .unwrap_or(false)
+                    });
+                if !found {
+                    issues.push(format!("Domain entity '{}' not found in source files", entity.name));
+                }
+            }
+        }
+
+        if issues.is_empty() {
+            let event = TimelineEvent::info(
+                TimelineActor::Factory,
+                "✅ Quality gate passed — all checks clear.",
+            );
+            self.persistence.append_event(session_id, &event)?;
+        } else {
+            let summary = issues.join("\n  - ");
+            let event = TimelineEvent::warning(
+                TimelineActor::Factory,
+                &format!("⚠️ Quality gate found issues (non-blocking):\n  - {}", summary),
+            );
+            self.persistence.append_event(session_id, &event)?;
+            // Non-blocking for MVP — log but continue
+        }
+
         Ok(StationResult::Done)
     }
 
@@ -3809,6 +4572,10 @@ Provide fixes as file changes:
                 );
                 self.persistence.append_event(session_id, &event)?;
             }
+            
+            if !app_started {
+                return Ok(StationResult::Failed("Application failed to start".to_string()));
+            }
         }
 
         Ok(StationResult::Done)
@@ -4009,6 +4776,17 @@ Provide fixes as file changes:
                             return Err(format!("PORT_IN_USE:{}", port));
                         }
                         return Err(format!("Process exited with code {}", exit_code));
+                    }
+                    
+                    // Even with exit code 0, check for false-positive success
+                    // (e.g. broken maven-wrapper.jar exits 0 but prints error to stderr)
+                    {
+                        let stderr_lines = stderr_buffer.lock().await;
+                        let stderr_combined = stderr_lines.join("\n");
+                        if Self::is_false_positive_success(&stderr_combined) {
+                            return Err(format!("Process exited with code 0 but output indicates failure: {}",
+                                stderr_lines.first().cloned().unwrap_or_default()));
+                        }
                     }
                     return Ok(false); // Process ended normally but app isn't running
                 }
@@ -4377,7 +5155,16 @@ Provide fixes as file changes:
 
         let status = child.wait().await.map_err(|e| e.to_string())?;
         let exit_code = status.code().unwrap_or(-1);
-        let success = status.success();
+        let mut success = status.success();
+
+        // Detect false-positive exit code 0: some tools (e.g. broken maven-wrapper.jar)
+        // exit with code 0 but actually failed. Check stderr/stdout for known failure patterns.
+        if success {
+            let all_output = format!("{}\n{}", stderr_lines.join("\n"), stdout_lines.join("\n"));
+            if Self::is_false_positive_success(&all_output) {
+                success = false;
+            }
+        }
 
         // Emit terminal end event
         let end_event = TimelineEvent::terminal_end(actor, exit_code, success);
@@ -4388,6 +5175,29 @@ Provide fixes as file changes:
             stdout: stdout_lines.join("\n"),
             stderr: stderr_lines.join("\n"),
         })
+    }
+
+    /// Detect false-positive exit code 0: some tools exit cleanly but actually failed.
+    /// For example, a broken maven-wrapper.jar prints "no main manifest attribute" and exits 0.
+    fn is_false_positive_success(output: &str) -> bool {
+        let lower = output.to_lowercase();
+        
+        // Broken JAR / maven-wrapper.jar issue
+        if lower.contains("no main manifest attribute") {
+            return true;
+        }
+        
+        // Gradle wrapper issues
+        if lower.contains("could not find or load main class org.gradle.wrapper") {
+            return true;
+        }
+        
+        // Generic: command not found but shell exited 0 (rare but possible)
+        if lower.contains("is not recognized as an internal or external command") && output.trim().lines().count() <= 3 {
+            return true;
+        }
+        
+        false
     }
 
     /// Run a command in a directory and capture output (no events, for internal use)
@@ -4741,6 +5551,8 @@ enum StationResult {
     NeedsInput(Vec<BlockingQuestion>),
     /// Station failed but recovery was attempted - signal to retry
     Retry,
+    /// Station failed and could not recover
+    Failed(String),
 }
 
 #[cfg(test)]

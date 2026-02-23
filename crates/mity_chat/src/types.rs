@@ -250,6 +250,57 @@ pub struct Proposal {
     pub changes: SuggestedChanges,
     /// Confidence score (0.0 - 1.0)
     pub confidence: f64,
+    /// The user's original demand / functional requirements description.
+    /// This is carried through all agent stations so every agent knows
+    /// *what* the user actually wants to build (domain features, not just
+    /// the technical template).
+    #[serde(rename = "userDemand", default, skip_serializing_if = "Option::is_none")]
+    pub user_demand: Option<String>,
+    /// Structured feature list extracted from user demand (filled by Analyst station).
+    #[serde(rename = "features", default, skip_serializing_if = "Vec::is_empty")]
+    pub features: Vec<FeatureRequirement>,
+    /// Domain model entities extracted from user demand (filled by Architect station).
+    #[serde(rename = "domainEntities", default, skip_serializing_if = "Vec::is_empty")]
+    pub domain_entities: Vec<DomainEntity>,
+}
+
+/// A single functional feature requirement extracted from user demand.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FeatureRequirement {
+    /// Short identifier (e.g. "wine-search")
+    pub id: String,
+    /// Human-readable title
+    pub title: String,
+    /// A longer description of the feature
+    pub description: String,
+    /// Priority (must-have, should-have, nice-to-have)
+    #[serde(default)]
+    pub priority: String,
+}
+
+/// A domain entity extracted from user demand.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DomainEntity {
+    /// Entity name (PascalCase, e.g. "Wine")
+    pub name: String,
+    /// Field definitions
+    pub fields: Vec<EntityField>,
+    /// Short description
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub description: Option<String>,
+}
+
+/// A field on a domain entity.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EntityField {
+    /// Field name (snake_case)
+    pub name: String,
+    /// Type (String, i64, f64, bool, Vec<String>, etc.)
+    #[serde(rename = "type")]
+    pub field_type: String,
+    /// Whether this field is required
+    #[serde(default)]
+    pub required: bool,
 }
 
 impl Proposal {
@@ -265,6 +316,9 @@ impl Proposal {
             workflow_stations: Vec::new(),
             changes: SuggestedChanges::default(),
             confidence: 0.0,
+            user_demand: None,
+            features: Vec::new(),
+            domain_entities: Vec::new(),
         }
     }
 }
